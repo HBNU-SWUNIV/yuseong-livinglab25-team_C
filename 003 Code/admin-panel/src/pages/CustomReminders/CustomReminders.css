@@ -1,0 +1,369 @@
+/* 맞춤 알림 페이지 스타일 */
+.custom-reminders {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+/* 수신자 선택 섹션 */
+.recipient-selector {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.recipient-selector h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.recipient-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.recipient-search input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.recipient-search button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.recipient-search button:hover {
+  background: #0056b3;
+}
+
+.recipient-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.recipient-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recipient-item:last-child {
+  border-bottom: none;
+}
+
+.recipient-item:hover {
+  background: #f8f9fa;
+}
+
+.recipient-item.selected {
+  background: #e3f2fd;
+  border-left: 4px solid #007bff;
+}
+
+.recipient-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.recipient-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.recipient-phone {
+  font-size: 12px;
+  color: #666;
+}
+
+.reminder-count {
+  background: #007bff;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+/* 맞춤 알림 목록 */
+.reminders-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reminders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.reminders-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* 알림 카드 */
+.reminder-cards {
+  display: grid;
+  gap: 15px;
+}
+
+.reminder-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background: white;
+  transition: box-shadow 0.2s;
+}
+
+.reminder-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reminder-card.inactive {
+  opacity: 0.6;
+  background: #f8f9fa;
+}
+
+.reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.reminder-title {
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+  flex: 1;
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #007bff;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+.reminder-message {
+  color: #666;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.reminder-schedule {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: #888;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.schedule-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* 빈 상태 */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-state h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 로딩 상태 */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+/* 에러/성공 메시지 */
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #c3e6cb;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .custom-reminders {
+    padding: 15px;
+  }
+
+  .recipient-search {
+    flex-direction: column;
+  }
+
+  .reminders-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .reminder-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .reminder-actions {
+    justify-content: flex-end;
+  }
+
+  .reminder-schedule {
+    flex-direction: column;
+    gap: 5px;
+  }
+}

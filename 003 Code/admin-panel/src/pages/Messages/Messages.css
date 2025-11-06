@@ -1,0 +1,557 @@
+.messages {
+  padding: 20px;
+}
+
+.messages-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.messages-tabs {
+  display: flex;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c757d;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-button.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.tab-button:hover {
+  color: #007bff;
+}
+
+/* 메시지 발송 폼 */
+.message-form {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.form-col {
+  flex: 1;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.character-count {
+  text-align: right;
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 5px;
+}
+
+.character-count.warning {
+  color: #ffc107;
+}
+
+.character-count.error {
+  color: #dc3545;
+}
+
+.message-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.type-option {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.type-option:hover {
+  border-color: #007bff;
+}
+
+.type-option.selected {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.type-option h4 {
+  margin: 0 0 5px 0;
+  color: #333;
+}
+
+.type-option p {
+  margin: 0;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.schedule-options {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.schedule-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.schedule-option input[type="radio"] {
+  margin: 0;
+}
+
+.datetime-input {
+  display: flex;
+  gap: 10px;
+}
+
+.datetime-input input {
+  flex: 1;
+}
+
+/* 메시지 이력 테이블 */
+.messages-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.messages-table th,
+.messages-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.messages-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.messages-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.message-type-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.type-daily {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.type-emergency {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.type-welfare {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.type-custom {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-sent {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* 필터 섹션 */
+.filters-section {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filters-row {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-group {
+  flex: 1;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* 미리보기 모달 */
+.preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.preview-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.phone-mockup {
+  background: #333;
+  border-radius: 20px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.phone-screen {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  min-height: 200px;
+}
+
+.message-bubble {
+  background: #007bff;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 18px;
+  margin-bottom: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message-info {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 10px;
+}
+
+/* 버튼 스타일 */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #1e7e34;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 통계 카드 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+/* 페이지네이션 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.pagination button {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #f8f9fa;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination .active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+/* 로딩 및 에러 상태 */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #c3e6cb;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+}
+
+.empty-state h3 {
+  margin-bottom: 10px;
+  color: #495057;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .messages-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .message-type-selector {
+    flex-direction: column;
+  }
+
+  .schedule-options {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .datetime-input {
+    flex-direction: column;
+  }
+
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-actions {
+    justify-content: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .messages-table {
+    font-size: 12px;
+  }
+
+  .messages-table th,
+  .messages-table td {
+    padding: 8px;
+  }
+
+  .preview-content {
+    width: 95%;
+    margin: 10px;
+  }
+}
+
+/* 테이블 반응형 개선 */
+@media (max-width: 768px) {
+  .messages-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
