@@ -23,6 +23,11 @@ const Sidebar = () => {
       path: '/custom-reminders',
       label: '맞춤 알림',
       icon: '⏰'
+    },
+    {
+      path : "/api-dashboard",
+      label : "API 관리",
+      icon : "🛰"
     }
   ];
 
