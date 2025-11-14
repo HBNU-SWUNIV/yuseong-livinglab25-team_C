@@ -8,6 +8,8 @@ import Messages from './pages/Messages/Messages';
 import CustomReminders from './pages/CustomReminders/CustomReminders';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import ApiDashboard from "./pages/APi/ApiDashboard";
+
 import './App.css';
 
 function App() {
@@ -26,6 +28,7 @@ function App() {
             <Route path="recipients" element={<Recipients />} />
             <Route path="messages" element={<Messages />} />
             <Route path="custom-reminders" element={<CustomReminders />} />
+            <Route path="/api-dashboard" element={<ApiDashboard />} />
           </Route>
         </Routes>
       </div>

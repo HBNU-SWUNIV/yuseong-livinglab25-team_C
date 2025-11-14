@@ -18,9 +18,10 @@ const recipientRoutes = require('./routes/recipients');
 const messageRoutes = require('./routes/messages');
 const customReminderRoutes = require('./routes/customReminders');
 const dashboardRoutes = require('./routes/dashboard');
+const weatherRoutes = require('./routes/weatherRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3001;
 
 // Security middleware
 app.use(helmet());
@@ -111,6 +112,7 @@ app.use('/api/recipients', recipientRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/custom-reminders', customReminderRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/weather', weatherRoutes);
 
 // Default route
 app.get('/', (req, res) => {
@@ -142,43 +144,32 @@ app.use('*', (req, res) => {
 let schedulerService;
 let emergencyMonitoringService;
 
-// Start server
-async function startServer() {
-  try {
-    // Try to initialize database connection (optional for now)
-    try {
-      await connectDatabase();
-      logger.info('Database connected successfully');
-    } catch (dbError) {
-      logger.warn('Database connection failed, continuing without database:', dbError.message);
-    }
 
-    // Initialize and start scheduler services
+app.listen(PORT, () => {
+  logger.info(`✅ Server running on port ${PORT}`);
+  logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
+});
+
+// Then run initialization logic
+(async () => {
+  try {
+    await connectDatabase();
+    logger.info('Database connected successfully');
+
+    schedulerService = new SchedulerService();
+    emergencyMonitoringService = new EmergencyMonitoringService();
+
     try {
-      schedulerService = new SchedulerService();
-      emergencyMonitoringService = new EmergencyMonitoringService();
-      
-      // Start schedulers only if database is available
-      if (process.env.NODE_ENV !== 'test') {
-        await schedulerService.startAllSchedulers();
-        await emergencyMonitoringService.startMonitoring();
-        logger.info('Scheduler services started successfully');
-      }
+      await schedulerService.startAllSchedulers();
+      await emergencyMonitoringService.startMonitoring();
+      logger.info('Scheduler services started successfully');
     } catch (schedulerError) {
       logger.warn('Scheduler services failed to start:', schedulerError.message);
     }
-
-    // Start the server
-    app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV}`);
-      logger.info(`Health check: http://localhost:${PORT}/health`);
-    });
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+  } catch (err) {
+    logger.error('Initialization error:', err.message);
   }
-}
+})();
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
@@ -206,7 +197,5 @@ async function gracefulShutdown() {
   }
   process.exit(0);
 }
-
-startServer();
 
 module.exports = app;
