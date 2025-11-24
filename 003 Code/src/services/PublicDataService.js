@@ -73,55 +73,56 @@ class PublicDataService {
     }
   }
 
-  /**
-   * 미세먼지 데이터를 가져오고 캐싱합니다
-   * @param {boolean} forceRefresh - 캐시 무시하고 새로 가져올지 여부
-   * @returns {Promise<Object>} 미세먼지 데이터
-   */
-  async getAirQualityData(forceRefresh = false) {
-    const region = '유성구';
-    
-    try {
-      // 캐시된 데이터 확인
-      if (!forceRefresh) {
-        const cachedData = await this.cache.getAirQualityData(region);
-        if (cachedData) {
-          await this.cache.recordCacheHit('air_quality', region);
-          logger.info('Air quality data served from cache');
-          return this.normalizeAirQualityData(cachedData.data);
-        }
+ /**
+ * 미세먼지 데이터를 가져오고 캐싱합니다
+ * @param {boolean} forceRefresh - 캐시 무시 여부
+ */
+async getAirQualityData(forceRefresh = false) {
+  const region = "유성구";
+
+  try {
+    // 1) 캐시 확인
+    if (!forceRefresh) {
+      const cached = await this.cache.getAirQualityData(region);
+      if (cached) {
+        await this.cache.recordCacheHit("air_quality", region);
+        logger.info("Air quality data served from cache");
+        return this.normalizeAirQualityData(cached.data);
       }
-
-      // API에서 새 데이터 가져오기
-      await this.cache.recordCacheMiss('air_quality', region);
-      const airQualityData = await this.fetchWithRetry(
-        () => this.airQualityClient.getCurrentAirQuality(),
-        'air_quality'
-      );
-
-      // 데이터 정규화 및 검증
-      const normalizedData = this.normalizeAirQualityData(airQualityData);
-      this.validateAirQualityData(normalizedData);
-
-      // 캐시에 저장 (2시간)
-      await this.cache.cacheAirQualityData(normalizedData, region);
-      
-      logger.info('Air quality data fetched and cached successfully');
-      return normalizedData;
-
-    } catch (error) {
-      logger.error('Failed to get air quality data', { error: error.message });
-      
-      // 오류 시 캐시된 데이터라도 반환 시도
-      const fallbackData = await this.getFallbackAirQualityData(region);
-      if (fallbackData) {
-        logger.warn('Returning fallback air quality data due to API error');
-        return fallbackData;
-      }
-      
-      throw error;
     }
+
+    // 2) API 호출
+    await this.cache.recordCacheMiss("air_quality", region);
+
+    const rawData = await this.fetchWithRetry(
+      () => this.airQualityClient.fetchDaejeonAirQuality(),
+      "air_quality"
+    );
+
+    // 3) 정규화
+    const normalized = this.normalizeAirQualityData(rawData);
+
+    // 4) 캐시에 저장 (1시간)
+    await this.cache.cacheAirQualityData(normalized, region);
+
+    logger.info("Air quality data fetched and cached successfully");
+    return normalized;
+
+  } catch (err) {
+    logger.error("Failed to get air quality data", { error: err.message });
+
+    // 폴백
+    const fallback = await this.getFallbackAirQualityData(region);
+    if (fallback) {
+      logger.warn("Returning fallback air quality data due to API failure");
+      return fallback;
+    }
+
+    throw err;
   }
+}
+
+
 
   /**
    * 재난 알림 데이터를 가져오고 캐싱합니다
@@ -275,21 +276,70 @@ class PublicDataService {
    * @returns {Object} 정규화된 미세먼지 데이터
    */
   normalizeAirQualityData(data) {
-    return {
-      stationName: data.stationName || '유성구',
-      pm10Value: data.pm10Value || null,
-      pm10Grade: data.pm10Grade || '알 수 없음',
-      pm25Value: data.pm25Value || null,
-      pm25Grade: data.pm25Grade || '알 수 없음',
-      o3Value: data.o3Value || null,
-      o3Grade: data.o3Grade || '알 수 없음',
-      khaiValue: data.khaiValue || null,
-      khaiGrade: data.khaiGrade || '알 수 없음',
-      dataTime: data.dataTime || new Date().toISOString(),
-      fetchedAt: data.fetchedAt || new Date(),
-      region: '유성구'
-    };
+  if (!data || typeof data !== "object") return {};
+
+  const EXCLUDED = [
+    "읍내동",
+    "문평동",
+    "문창동",
+    "대흥동1",
+    "성남동1",
+    "대성동",
+    "정림동",
+    "둔산동",
+    "월평동"
+  ];
+
+  const result = {};
+
+  for (const [station, list] of Object.entries(data)) {
+
+    // 🔥 제외할 측정소 거르기
+    if (EXCLUDED.includes(station)) {
+      continue;
+    }
+
+    const latest = list[0];
+
+    const pm10 = latest?.pm10 ?? latest?.pm10Value ?? null;
+    const pm25 = latest?.pm25 ?? latest?.pm25Value ?? null;
+    const o3 = latest?.o3 ?? latest?.o3Value ?? null;
+    const no2 = latest?.no2 ?? latest?.no2Value ?? null;
+    const so2 = latest?.so2 ?? latest?.so2Value ?? null;
+    const co = latest?.co ?? latest?.coValue ?? null;
+
+    // 리턴값을 배열로
+    result[station] = [
+      {
+        stationName: station,
+        pm10,
+        pm25,
+        o3,
+        no2,
+        so2,
+        co,
+
+        pm10Value: pm10,
+        pm25Value: pm25,
+        o3Value: o3,
+        no2Value: no2,
+        so2Value: so2,
+        coValue: co,
+
+        pm10Grade: latest?.pm10Grade ?? null,
+        pm25Grade: latest?.pm25Grade ?? null,
+        khaiValue: latest?.khaiValue ?? null,
+        khaiGrade: latest?.khaiGrade ?? null,
+
+        time: latest?.time ?? latest?.dataTime ?? null,
+        fetchedAt: new Date()
+      }
+    ];
   }
+
+  return result;
+}
+
 
   /**
    * 재난 데이터 정규화
