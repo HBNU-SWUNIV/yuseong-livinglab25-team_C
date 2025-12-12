@@ -61,7 +61,6 @@ app.get("/health", (req, res) => {
     version: "1.0.0",
   };
 
-  // Add scheduler status if available
   if (schedulerService) {
     healthData.scheduler = schedulerService.getSchedulerStatus();
   }
@@ -160,36 +159,41 @@ app.use("*", (req, res) => {
   });
 });
 
-// Initialize scheduler services
+// Initialize services variables
 let schedulerService;
 let emergencyMonitoringService;
 
-app.listen(PORT, () => {
-  logger.info(`✅ Server running on port ${PORT}`);
-  logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
-});
-
-// Then run initialization logic
+// ★★★ [수정됨] 서버 초기화 로직 변경 ★★★
 (async () => {
   try {
+    // 1. DB 연결 시도
     await connectDatabase();
-    logger.info("Database connected successfully");
+    logger.info("✅ Database connected successfully");
 
+    // 2. 스케줄러 서비스 초기화
     schedulerService = new SchedulerService();
     emergencyMonitoringService = new EmergencyMonitoringService();
 
     try {
       await schedulerService.startAllSchedulers();
       await emergencyMonitoringService.startMonitoring();
-      logger.info("Scheduler services started successfully");
+      logger.info("✅ Scheduler services started successfully");
     } catch (schedulerError) {
       logger.warn(
-        "Scheduler services failed to start:",
+        "⚠️ Scheduler services failed to start:",
         schedulerError.message
       );
     }
+
+    // 3. [핵심] DB 연결 성공 후에 서버 리스닝 시작
+    app.listen(PORT, () => {
+      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
+    });
   } catch (err) {
-    logger.error("Initialization error:", err.message);
+    // 치명적 오류 발생 시 프로세스 종료
+    logger.error("❌ Initialization error (Critical):", err.message);
+    process.exit(1);
   }
 })();
 
@@ -206,7 +210,6 @@ process.on("SIGINT", async () => {
 
 async function gracefulShutdown() {
   try {
-    // Stop scheduler services
     if (schedulerService) {
       schedulerService.stopAllSchedulers();
     }
@@ -214,6 +217,7 @@ async function gracefulShutdown() {
       await emergencyMonitoringService.shutdown();
     }
     logger.info("Scheduler services stopped");
+    // 필요한 경우 DB 연결 종료 코드 추가
   } catch (error) {
     logger.error("Error during shutdown:", error);
   }
