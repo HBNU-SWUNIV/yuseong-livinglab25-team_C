@@ -1,17 +1,19 @@
-const { pool } = require('../config/database');
+const { getPool } = require('../config/database');
 const logger = require('../utils/logger');
 
 class DashboardController {
   // 대시보드 통계 조회
   static async getStats(req, res) {
     try {
+      const pool = getPool();
       const connection = await pool.getConnection();
       
       try {
-        // 총 수신자 수
-        const [recipientCount] = await connection.execute(
-          'SELECT COUNT(*) as count FROM recipients WHERE is_active = 1'
-        );
+        const [recipientCount] = await connection.execute(`
+          SELECT COUNT(*) as count 
+          FROM recipients 
+          WHERE is_active = 1
+        `);
 
         // 오늘 발송된 메시지 수
         const [todayMessages] = await connection.execute(`
@@ -38,14 +40,13 @@ class DashboardController {
           );
         }
 
-        const stats = {
+        res.json({
           totalRecipients: recipientCount[0].count,
           todayMessages: todayMessages[0].count,
-          successRate: successRate,
+          successRate,
           lastUpdated: new Date().toISOString()
-        };
+        });
 
-        res.json(stats);
       } finally {
         connection.release();
       }
@@ -62,6 +63,7 @@ class DashboardController {
   static async getRecentMessages(req, res) {
     try {
       const limit = parseInt(req.query.limit) || 5;
+      const pool = getPool();
       const connection = await pool.getConnection();
       
       try {
@@ -102,6 +104,7 @@ class DashboardController {
   // 시스템 상태 조회
   static async getSystemStatus(req, res) {
     try {
+      const pool = getPool();
       const connection = await pool.getConnection();
       
       try {
@@ -138,16 +141,13 @@ class DashboardController {
             message: `최근 1시간 동안 ${recentFailures[0].count}건의 메시지 발송이 실패했습니다.`,
             timestamp: new Date().toISOString()
           });
-          if (systemStatus === 'healthy') systemStatus = 'warning';
+          systemStatus = 'warning';
         }
 
-        // API 데이터 업데이트 확인
         const lastUpdate = lastApiUpdate[0].last_update;
         if (lastUpdate) {
-          const timeDiff = Date.now() - new Date(lastUpdate).getTime();
-          const hoursDiff = timeDiff / (1000 * 60 * 60);
-          
-          if (hoursDiff > 3) {
+          const diffHour = (Date.now() - new Date(lastUpdate)) / (1000 * 60 * 60);
+          if (diffHour > 3) {
             alerts.push({
               level: 'warning',
               title: '공공 데이터 업데이트 지연',
@@ -170,7 +170,7 @@ class DashboardController {
 
         res.json({
           status: systemStatus,
-          alerts: alerts,
+          alerts,
           lastChecked: new Date().toISOString()
         });
       } finally {
