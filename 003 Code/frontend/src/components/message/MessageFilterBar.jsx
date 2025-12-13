@@ -177,6 +177,7 @@ function MessageFilterBar({
   onSearchChange,
   onSearch,
   onReset,
+  onFullRefresh,
   messageType,
   onMessageTypeChange,
   periodFilter,
@@ -279,6 +280,11 @@ function MessageFilterBar({
               })}
             </PeriodSegmentedControl>
           </PeriodFilterGroup>
+          
+          <SearchButton onClick={onFullRefresh}>
+            <RefreshCw size={18} />
+            전체 새로고침
+          </SearchButton>
         </FilterRow>
       </FilterBarContainer>
 

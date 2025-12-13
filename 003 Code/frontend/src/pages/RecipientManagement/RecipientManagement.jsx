@@ -269,6 +269,7 @@ function RecipientManagement() {
         onCSVUpload={handleCSVUpload}
         onAddRecipient={handleAddRecipient}
         onRefresh={handleRefresh}
+        onFullRefresh={handleFullRefresh}
         customStartDate={customStartDate}
         customEndDate={customEndDate}
         onCustomPeriodConfirm={handleCustomPeriodConfirm}

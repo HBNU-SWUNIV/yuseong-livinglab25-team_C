@@ -228,6 +228,7 @@ function MessageManagement() {
             onSearchChange={setSearchQuery}
             onSearch={handleSearch}
             onReset={handleReset}
+            onFullRefresh={handleFullRefresh}
             messageType={messageType}
             onMessageTypeChange={setMessageType}
             periodFilter={periodFilter}

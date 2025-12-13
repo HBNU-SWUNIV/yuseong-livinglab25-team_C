@@ -192,6 +192,7 @@ function RecipientFilterBar({
   onCSVUpload,
   onAddRecipient,
   onRefresh,
+  onFullRefresh,
   customStartDate,
   customEndDate,
   onCustomPeriodConfirm
@@ -273,6 +274,11 @@ function RecipientFilterBar({
           <UserPlus size={18} />
           수신자 추가
         </PrimaryButton>
+        
+        <ActionButton onClick={onFullRefresh}>
+          <RefreshCw size={18} />
+          전체 새로고침
+        </ActionButton>
       </FilterBarContainer>
 
       {isPeriodModalOpen && (
