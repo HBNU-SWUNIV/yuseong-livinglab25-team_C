@@ -51,3 +51,5 @@ function EmptyState({ message = '검색된 수신자가 없습니다' }) {
 
 export default EmptyState;
 
+
+
