@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, MessageSquare, Bell, Monitor, Settings, HelpCircle, UserCircle } from 'lucide-react';
 import styled from 'styled-components';
-import logoColor from '../../assets/logo-color.svg';
+import logoColor from '../../assets/login-color.svg';
 
 const SidebarContainer = styled.aside`
   position: fixed;
