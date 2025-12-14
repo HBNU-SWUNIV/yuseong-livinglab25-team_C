@@ -77,51 +77,73 @@ class WeatherApiClient {
    * @returns {Object} 파싱된 날씨 정보
    */
   parseWeatherData(items) {
-    const weatherInfo = {
-      temperature: null,
-      minTemperature: null,
-      maxTemperature: null,
-      condition: null,
-      precipitationProbability: null,
-      humidity: null,
-      windSpeed: null,
-      fetchedAt: new Date()
-    };
+  const weatherInfo = {
+    temperature: null,
+    minTemperature: null,
+    maxTemperature: null,
+    condition: null,
+    precipitationProbability: null,
+    humidity: null,
+    windSpeed: null,
+    fetchedAt: new Date()
+  };
 
-    // 현재 시간에 가장 가까운 예보 데이터 찾기
-    const now = new Date();
-    const currentHour = now.getHours().toString().padStart(2, '0') + '00';
-    
-    items.forEach(item => {
-      if (item.fcstTime === currentHour) {
-        switch (item.category) {
-          case 'TMP': // 1시간 기온
-            weatherInfo.temperature = parseFloat(item.fcstValue);
-            break;
-          case 'TMN': // 일 최저기온
-            weatherInfo.minTemperature = parseFloat(item.fcstValue);
-            break;
-          case 'TMX': // 일 최고기온
-            weatherInfo.maxTemperature = parseFloat(item.fcstValue);
-            break;
-          case 'SKY': // 하늘상태
-            weatherInfo.condition = this.getSkyCondition(item.fcstValue);
-            break;
-          case 'POP': // 강수확률
-            weatherInfo.precipitationProbability = parseInt(item.fcstValue);
-            break;
-          case 'REH': // 습도
-            weatherInfo.humidity = parseInt(item.fcstValue);
-            break;
-          case 'WSD': // 풍속
-            weatherInfo.windSpeed = parseFloat(item.fcstValue);
-            break;
-        }
+  const now = new Date();
+  const currentHHMM = now.getHours().toString().padStart(2, '0') + '00';
+
+  const times = [...new Set(items.map(i => i.fcstTime))].sort();
+
+  let targetTime = times.find(t => t >= currentHHMM);
+  if (!targetTime) targetTime = times[times.length - 1];
+
+  let nearestSky = null;
+  let nearestSkyDiff = Infinity;
+
+  items.forEach(item => {
+    const timeDiff = Math.abs(parseInt(item.fcstTime) - parseInt(currentHHMM));
+
+    if (item.category === 'SKY' && timeDiff < nearestSkyDiff) {
+      nearestSkyDiff = timeDiff;
+      nearestSky = item;
+    }
+  });
+
+  items.forEach(item => {
+    // TMN/TMX는 하루 1회 제공 → 시간 무시
+    if (item.category === 'TMN') {
+      weatherInfo.minTemperature = parseFloat(item.fcstValue);
+    }
+    if (item.category === 'TMX') {
+      weatherInfo.maxTemperature = parseFloat(item.fcstValue);
+    }
+
+    // TMP 등은 targetTime 기준
+    if (item.fcstTime === targetTime) {
+      switch (item.category) {
+        case 'TMP':
+          weatherInfo.temperature = parseFloat(item.fcstValue);
+          break;
+        case 'POP':
+          weatherInfo.precipitationProbability = parseInt(item.fcstValue);
+          break;
+        case 'REH':
+          weatherInfo.humidity = parseInt(item.fcstValue);
+          break;
+        case 'WSD':
+          weatherInfo.windSpeed = parseFloat(item.fcstValue);
+          break;
       }
-    });
+    }
+  });
 
-    return weatherInfo;
+  if (nearestSky) {
+    weatherInfo.condition = this.getSkyCondition(nearestSky.fcstValue);
   }
+
+  return weatherInfo;
+}
+
+
 
   /**
    * 하늘상태 코드를 문자열로 변환

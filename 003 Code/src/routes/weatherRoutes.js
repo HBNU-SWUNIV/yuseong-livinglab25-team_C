@@ -1,23 +1,36 @@
 const express = require("express");
 const router = express.Router();
-const WeatherApiClient = require("../services/WeatherApiClient");
-const logger = require("../utils/logger");
+const PublicDataService = require("../services/PublicDataService");
 
-const weatherClient = new WeatherApiClient();
+const publicService = new PublicDataService();
 
+// 1) 현재 날씨 조회
 router.get("/", async (req, res) => {
   try {
-    const weather = await weatherClient.getCurrentWeather();
-    res.json({
-      success: true,
-      data: weather
-    });
-  } catch (err) {
-    logger.error("🌧 Weather API Error", { error: err.message });
-    res.status(500).json({
-      success: false,
-      error: err.message || "기상청 API 호출 실패"
-    });
+    const data = await publicService.getWeatherData();
+    res.json({ success: true, data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 2) 대기질 조회
+router.get("/air-quality", async (req, res) => {
+  try {
+    const data = await publicService.getAirQualityData();
+    res.json({ success: true, data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 3) 재난 문자 조회
+router.get("/disaster", async (req, res) => {
+  try {
+    const data = await publicService.getEmergencyAlerts();
+    res.json({ success: true, data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
   }
 });
 
