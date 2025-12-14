@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { RefreshCw, CloudRain, Wind, AlertCircle, Thermometer, Droplets } from 'lucide-react';
+import { RefreshCw, CloudRain, Wind, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+
+/* ===================== 스타일 ===================== */
 
 const PageContainer = styled.div`
   padding: 32px;
@@ -34,26 +36,10 @@ const RefreshButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: #f9fafb;
-    border-color: #d1d5db;
-  }
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-  
-  svg {
-    width: 18px;
-    height: 18px;
-    transition: transform 0.3s ease;
-  }
-  
-  &:active:not(:disabled) svg {
-    transform: rotate(180deg);
   }
 `;
 
@@ -61,77 +47,20 @@ const ContentContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 32px;
-  margin-top: 0;
 `;
 
 const Column = styled.div`
   display: flex;
   flex-direction: column;
-  position: relative;
-  
-  &:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: -16px;
-    width: 1px;
-    height: 100%;
-    background-color: #e5e7eb;
-  }
 `;
 
 const ColumnTitle = styled.h2`
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 16px 0;
+  margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e5e7eb;
 `;
-
-const EmptyStateContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-`;
-
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background-color: #f3f4f6;
-  margin-bottom: 16px;
-  
-  svg {
-    width: 32px;
-    height: 32px;
-    color: #9ca3af;
-  }
-`;
-
-const EmptyMessage = styled.p`
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.5;
-`;
-
-const EmptyState = ({ icon: Icon, message }) => {
-  return (
-    <EmptyStateContainer>
-      <IconWrapper>
-        <Icon />
-      </IconWrapper>
-      <EmptyMessage>{message}</EmptyMessage>
-    </EmptyStateContainer>
-  );
-};
 
 const DataCard = styled.div`
   background: white;
@@ -143,10 +72,9 @@ const DataCard = styled.div`
 const DataRow = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid #f3f4f6;
-  
+
   &:last-child {
     border-bottom: none;
   }
@@ -160,171 +88,182 @@ const DataLabel = styled.span`
 const DataValue = styled.span`
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
 `;
+
+const EmptyStateContainer = styled.div`
+  padding: 60px 20px;
+  text-align: center;
+  color: #6b7280;
+`;
+
+const EmptyState = ({ icon: Icon, message }) => (
+  <EmptyStateContainer>
+    <Icon size={32} />
+    <p style={{ marginTop: 12 }}>{message}</p>
+  </EmptyStateContainer>
+);
+
+/* ===================== 컴포넌트 ===================== */
 
 function APIManagement() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 데이터 상태
   const [weatherData, setWeatherData] = useState(null);
   const [airQualityData, setAirQualityData] = useState(null);
   const [disasterData, setDisasterData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // 데이터 가져오기
-  const fetchData = async () => {
-    setLoading(true);
+  // 🔥 로딩 상태 분리 (핵심)
+  const [loadingWeather, setLoadingWeather] = useState(true);
+  const [loadingAir, setLoadingAir] = useState(true);
+  const [loadingDisaster, setLoadingDisaster] = useState(true);
+
+  /* ===================== API 호출 ===================== */
+
+  const fetchWeather = async () => {
     try {
-      const [weatherRes, airQualityRes, disasterRes] = await Promise.allSettled([
-        axios.get('http://localhost:3001/api/weather'),
-        axios.get('http://localhost:3001/api/weather/air-quality'),
-        axios.get('http://localhost:3001/api/weather/disaster'),
-      ]);
-
-      if (weatherRes.status === 'fulfilled' && weatherRes.value.data.success) {
-        setWeatherData(weatherRes.value.data.data);
+      const res = await axios.get('/api/weather', { timeout: 3000 });
+      if (res.data?.success) {
+        setWeatherData(res.data.data);
       }
-      if (airQualityRes.status === 'fulfilled' && airQualityRes.value.data.success) {
-        setAirQualityData(airQualityRes.value.data.data);
-      }
-      if (disasterRes.status === 'fulfilled' && disasterRes.value.data.success) {
-        setDisasterData(disasterRes.value.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch API data:', error);
+    } catch (e) {
+      console.warn('Weather fetch failed');
     } finally {
-      setLoading(false);
-      setLastUpdate(new Date());
+      setLoadingWeather(false);
     }
   };
 
+  const fetchAirQuality = async () => {
+    try {
+      const res = await axios.get('/api/weather/air-quality');
+      if (res.data?.success) {
+        setAirQualityData(res.data.data);
+      }
+    } catch (e) {
+      console.warn('Air quality fetch failed');
+    } finally {
+      setLoadingAir(false);
+    }
+  };
+
+  const fetchDisaster = async () => {
+    try {
+      const res = await axios.get('/api/weather/disaster', { timeout: 3000 });
+      if (res.data?.success) {
+        setDisasterData(res.data.data);
+      }
+    } catch (e) {
+      console.warn('Disaster fetch failed');
+    } finally {
+      setLoadingDisaster(false);
+    }
+  };
+
+  const fetchAll = () => {
+    setLoadingWeather(true);
+    setLoadingAir(true);
+    setLoadingDisaster(true);
+
+    fetchWeather();
+    fetchAirQuality();
+    fetchDisaster();
+
+    setLastUpdate(new Date());
+  };
+
   useEffect(() => {
-    fetchData();
+    fetchAll();
   }, []);
 
-  // 날짜 포맷팅 함수
-  const formatDateTime = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-    const weekday = weekdays[date.getDay()];
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}.${month}.${day}. ${weekday} ${hours}:${minutes}`;
-  };
-
-  // 전체 새로고침 핸들러
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchData().finally(() => setIsRefreshing(false));
-  };
+  /* ===================== 렌더 ===================== */
 
   return (
     <PageContainer>
       <HeaderSection>
         <LastUpdate>
-          마지막 업데이트: {formatDateTime(lastUpdate)}
+          마지막 업데이트: {lastUpdate.toLocaleString()}
         </LastUpdate>
-        <RefreshButton onClick={handleRefresh} disabled={isRefreshing}>
-          <RefreshCw size={18} />
+        <RefreshButton onClick={fetchAll}>
+          <RefreshCw size={16} />
           전체 새로고침
         </RefreshButton>
       </HeaderSection>
 
       <ContentContainer>
-        {/* 날씨 정보 */}
+        {/* 🌤 날씨 */}
         <Column>
           <ColumnTitle>날씨 정보</ColumnTitle>
-          {loading ? (
+          {loadingWeather ? (
             <EmptyState icon={CloudRain} message="날씨 데이터를 불러오는 중..." />
           ) : weatherData ? (
             <DataCard>
-              <DataRow>
-                <DataLabel>지역</DataLabel>
-                <DataValue>{weatherData.region || '유성구'}</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>현재 기온</DataLabel>
-                <DataValue>{weatherData.temperature}°C</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>최저 / 최고</DataLabel>
-                <DataValue>{weatherData.minTemperature}°C / {weatherData.maxTemperature}°C</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>날씨</DataLabel>
-                <DataValue>{weatherData.condition}</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>강수 확률</DataLabel>
-                <DataValue>{weatherData.precipitationProbability}%</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>습도</DataLabel>
-                <DataValue>{weatherData.humidity}%</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>풍속</DataLabel>
-                <DataValue>{weatherData.windSpeed} m/s</DataValue>
-              </DataRow>
+              <DataRow><DataLabel>현재 기온</DataLabel><DataValue>{weatherData.temperature}°C</DataValue></DataRow>
+              <DataRow><DataLabel>최저 / 최고</DataLabel><DataValue>{weatherData.minTemperature}°C / {weatherData.maxTemperature}°C</DataValue></DataRow>
+              <DataRow><DataLabel>날씨</DataLabel><DataValue>{weatherData.condition}</DataValue></DataRow>
+              <DataRow><DataLabel>강수 확률</DataLabel><DataValue>{weatherData.precipitationProbability}%</DataValue></DataRow>
             </DataCard>
           ) : (
             <EmptyState icon={CloudRain} message="날씨 데이터를 불러올 수 없습니다" />
           )}
         </Column>
 
-        {/* 대기질 정보 */}
-        <Column>
-          <ColumnTitle>대기질 정보</ColumnTitle>
-          {loading ? (
-            <EmptyState icon={Wind} message="대기질 데이터를 불러오는 중..." />
-          ) : airQualityData ? (
-            <DataCard>
-              <DataRow>
-                <DataLabel>측정소</DataLabel>
-                <DataValue>{airQualityData.stationName || '유성구'}</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>통합 지수</DataLabel>
-                <DataValue>{airQualityData.khaiValue} ({airQualityData.khaiGrade})</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>미세먼지 (PM10)</DataLabel>
-                <DataValue>{airQualityData.pm10Value} ㎍/㎥ ({airQualityData.pm10Grade})</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>초미세먼지 (PM2.5)</DataLabel>
-                <DataValue>{airQualityData.pm25Value} ㎍/㎥ ({airQualityData.pm25Grade})</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>오존 (O3)</DataLabel>
-                <DataValue>{airQualityData.o3Value} ppm</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>이산화질소 (NO2)</DataLabel>
-                <DataValue>{airQualityData.no2Value} ppm</DataValue>
-              </DataRow>
-            </DataCard>
-          ) : (
-            <EmptyState icon={Wind} message="대기질 데이터를 불러올 수 없습니다" />
-          )}
-        </Column>
+{/* 💨 미세먼지 */}
+<Column>
+  <ColumnTitle>대기질 정보</ColumnTitle>
 
-        {/* 재난 문자 현황 */}
+  {loadingAir ? (
+    <EmptyState icon={Wind} message="대기질 데이터를 불러오는 중..." />
+  ) : airQualityData && Object.keys(airQualityData).length > 0 ? (() => {
+      // ✅ 첫 번째 측정소 선택
+      const firstStation = Object.values(airQualityData)[0];
+      const data = firstStation?.[0];
+
+      if (!data) {
+        return <EmptyState icon={Wind} message="대기질 데이터 없음" />;
+      }
+
+      return (
+        <DataCard>
+          <DataRow>
+            <DataLabel>측정소</DataLabel>
+            <DataValue>{data.stationName}</DataValue>
+          </DataRow>
+
+          <DataRow>
+            <DataLabel>통합지수</DataLabel>
+            <DataValue>
+              {data.khaiValue ?? '-'} ({data.khaiGrade ?? '-'})
+            </DataValue>
+          </DataRow>
+
+          <DataRow>
+            <DataLabel>PM10</DataLabel>
+            <DataValue>{data.pm10Value ?? '-'}</DataValue>
+          </DataRow>
+
+          <DataRow>
+            <DataLabel>PM2.5</DataLabel>
+            <DataValue>{data.pm25Value ?? '-'}</DataValue>
+          </DataRow>
+        </DataCard>
+      );
+    })()
+  : (
+    <EmptyState icon={Wind} message="대기질 데이터를 불러올 수 없습니다" />
+  )}
+</Column>
+
+
+        {/* 🚨 재난 */}
         <Column>
           <ColumnTitle>재난 문자 현황</ColumnTitle>
-          {loading ? (
+          {loadingDisaster ? (
             <EmptyState icon={AlertCircle} message="재난 문자를 불러오는 중..." />
-          ) : disasterData && disasterData.length > 0 ? (
+          ) : disasterData?.length > 0 ? (
             <DataCard>
-              {disasterData.slice(0, 5).map((disaster, index) => (
-                <DataRow key={index}>
-                  <div style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-                    <DataLabel style={{marginBottom: '4px'}}>{disaster.create_date}</DataLabel>
-                    <DataValue style={{fontSize: '13px'}}>{disaster.msg}</DataValue>
-                  </div>
+              {disasterData.slice(0, 5).map((d, i) => (
+                <DataRow key={i}>
+                  <DataValue>{d.msg}</DataValue>
                 </DataRow>
               ))}
             </DataCard>
@@ -338,4 +277,3 @@ function APIManagement() {
 }
 
 export default APIManagement;
-
