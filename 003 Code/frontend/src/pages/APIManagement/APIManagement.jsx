@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { RefreshCw, CloudRain, Wind, AlertCircle } from 'lucide-react';
+import { RefreshCw, CloudRain, Wind, AlertCircle, Thermometer, Droplets } from 'lucide-react';
+import axios from 'axios';
 
 const PageContainer = styled.div`
   padding: 32px;
@@ -132,13 +133,73 @@ const EmptyState = ({ icon: Icon, message }) => {
   );
 };
 
+const DataCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+`;
+
+const DataRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const DataLabel = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+`;
+
+const DataValue = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+`;
+
 function APIManagement() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [weatherData, setWeatherData] = useState(null);
+  const [airQualityData, setAirQualityData] = useState(null);
+  const [disasterData, setDisasterData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // 페이지 로드 시 현재 시간으로 초기화
+  // 데이터 가져오기
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [weatherRes, airQualityRes, disasterRes] = await Promise.allSettled([
+        axios.get('http://localhost:3001/api/weather'),
+        axios.get('http://localhost:3001/api/weather/air-quality'),
+        axios.get('http://localhost:3001/api/weather/disaster'),
+      ]);
+
+      if (weatherRes.status === 'fulfilled' && weatherRes.value.data.success) {
+        setWeatherData(weatherRes.value.data.data);
+      }
+      if (airQualityRes.status === 'fulfilled' && airQualityRes.value.data.success) {
+        setAirQualityData(airQualityRes.value.data.data);
+      }
+      if (disasterRes.status === 'fulfilled' && disasterRes.value.data.success) {
+        setDisasterData(disasterRes.value.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch API data:', error);
+    } finally {
+      setLoading(false);
+      setLastUpdate(new Date());
+    }
+  };
+
   useEffect(() => {
-    setLastUpdate(new Date());
+    fetchData();
   }, []);
 
   // 날짜 포맷팅 함수
@@ -157,12 +218,7 @@ function APIManagement() {
   // 전체 새로고침 핸들러
   const handleRefresh = () => {
     setIsRefreshing(true);
-    
-    // 실제 API 호출 시뮬레이션
-    setTimeout(() => {
-      setLastUpdate(new Date());
-      setIsRefreshing(false);
-    }, 1000);
+    fetchData().finally(() => setIsRefreshing(false));
   };
 
   return (
@@ -181,28 +237,100 @@ function APIManagement() {
         {/* 날씨 정보 */}
         <Column>
           <ColumnTitle>날씨 정보</ColumnTitle>
-          <EmptyState 
-            icon={CloudRain} 
-            message="날씨 데이터를 불러올 수 없습니다"
-          />
+          {loading ? (
+            <EmptyState icon={CloudRain} message="날씨 데이터를 불러오는 중..." />
+          ) : weatherData ? (
+            <DataCard>
+              <DataRow>
+                <DataLabel>지역</DataLabel>
+                <DataValue>{weatherData.region || '유성구'}</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>현재 기온</DataLabel>
+                <DataValue>{weatherData.temperature}°C</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>최저 / 최고</DataLabel>
+                <DataValue>{weatherData.minTemperature}°C / {weatherData.maxTemperature}°C</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>날씨</DataLabel>
+                <DataValue>{weatherData.condition}</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>강수 확률</DataLabel>
+                <DataValue>{weatherData.precipitationProbability}%</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>습도</DataLabel>
+                <DataValue>{weatherData.humidity}%</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>풍속</DataLabel>
+                <DataValue>{weatherData.windSpeed} m/s</DataValue>
+              </DataRow>
+            </DataCard>
+          ) : (
+            <EmptyState icon={CloudRain} message="날씨 데이터를 불러올 수 없습니다" />
+          )}
         </Column>
 
         {/* 대기질 정보 */}
         <Column>
           <ColumnTitle>대기질 정보</ColumnTitle>
-          <EmptyState 
-            icon={Wind} 
-            message="대기질 데이터를 불러올 수 없습니다"
-          />
+          {loading ? (
+            <EmptyState icon={Wind} message="대기질 데이터를 불러오는 중..." />
+          ) : airQualityData ? (
+            <DataCard>
+              <DataRow>
+                <DataLabel>측정소</DataLabel>
+                <DataValue>{airQualityData.stationName || '유성구'}</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>통합 지수</DataLabel>
+                <DataValue>{airQualityData.khaiValue} ({airQualityData.khaiGrade})</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>미세먼지 (PM10)</DataLabel>
+                <DataValue>{airQualityData.pm10Value} ㎍/㎥ ({airQualityData.pm10Grade})</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>초미세먼지 (PM2.5)</DataLabel>
+                <DataValue>{airQualityData.pm25Value} ㎍/㎥ ({airQualityData.pm25Grade})</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>오존 (O3)</DataLabel>
+                <DataValue>{airQualityData.o3Value} ppm</DataValue>
+              </DataRow>
+              <DataRow>
+                <DataLabel>이산화질소 (NO2)</DataLabel>
+                <DataValue>{airQualityData.no2Value} ppm</DataValue>
+              </DataRow>
+            </DataCard>
+          ) : (
+            <EmptyState icon={Wind} message="대기질 데이터를 불러올 수 없습니다" />
+          )}
         </Column>
 
         {/* 재난 문자 현황 */}
         <Column>
           <ColumnTitle>재난 문자 현황</ColumnTitle>
-          <EmptyState 
-            icon={AlertCircle} 
-            message="최근 재난 문자가 없습니다"
-          />
+          {loading ? (
+            <EmptyState icon={AlertCircle} message="재난 문자를 불러오는 중..." />
+          ) : disasterData && disasterData.length > 0 ? (
+            <DataCard>
+              {disasterData.slice(0, 5).map((disaster, index) => (
+                <DataRow key={index}>
+                  <div style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+                    <DataLabel style={{marginBottom: '4px'}}>{disaster.create_date}</DataLabel>
+                    <DataValue style={{fontSize: '13px'}}>{disaster.msg}</DataValue>
+                  </div>
+                </DataRow>
+              ))}
+            </DataCard>
+          ) : (
+            <EmptyState icon={AlertCircle} message="최근 재난 문자가 없습니다" />
+          )}
         </Column>
       </ContentContainer>
     </PageContainer>
