@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { RefreshCw, CloudRain, Wind, AlertCircle, Thermometer, Droplets } from 'lucide-react';
+import { RefreshCw, CloudRain, Wind, AlertCircle, Sun, Cloud } from 'lucide-react';
 import axios from 'axios';
 
 const PageContainer = styled.div`
-  padding: 32px;
-  padding-top: 16px;
-  min-width: 0;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 `;
 
 const HeaderSection = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  padding: 1.5rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
 `;
 
 const LastUpdate = styled.div`
@@ -25,13 +28,13 @@ const LastUpdate = styled.div`
 const RefreshButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 6px;
+  padding: 8px 16px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background-color: #ffffff;
   color: #374151;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -47,46 +50,249 @@ const RefreshButton = styled.button`
   }
   
   svg {
-    width: 18px;
-    height: 18px;
-    transition: transform 0.3s ease;
+    width: 16px;
+    height: 16px;
+    transition: transform 0.5s ease;
   }
   
-  &:active:not(:disabled) svg {
+  &:hover:not(:disabled) svg {
     transform: rotate(180deg);
   }
 `;
 
-const ContentContainer = styled.div`
+const CardsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  margin-top: 0;
-`;
-
-const Column = styled.div`
-  display: flex;
-  flex-direction: column;
-  position: relative;
+  flex: 1;
+  height: calc(100vh - 90px);
   
-  &:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: -16px;
-    width: 1px;
-    height: 100%;
-    background-color: #e5e7eb;
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    height: auto;
   }
 `;
 
-const ColumnTitle = styled.h2`
-  font-size: 18px;
-  font-weight: 600;
+const Card = styled.div`
+  background: white;
+  padding: 2rem;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  
+  &:last-child {
+    border-right: none;
+  }
+  
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    min-height: 400px;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+`;
+
+const CardIcon = styled.div`
+  font-size: 24px;
+  line-height: 1;
+`;
+
+const CardTitle = styled.h2`
+  font-size: 1.2rem;
+  font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 16px 0;
-  padding-bottom: 12px;
+  margin: 0;
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background: #e5e7eb;
+  margin: 1rem 0;
+`;
+
+// 날씨 카드 스타일
+const WeatherMainStatus = styled.div`
+  text-align: center;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+`;
+
+const WeatherCondition = styled.div`
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  
+  svg {
+    width: 32px;
+    height: 32px;
+  }
+`;
+
+const WeatherGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+`;
+
+const WeatherItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+`;
+
+const WeatherLabel = styled.span`
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+`;
+
+const WeatherValue = styled.span`
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+`;
+
+// 대기질 카드 스타일
+const DistrictContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const DistrictBox = styled.div`
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+`;
+
+const DistrictHeader = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
+`;
+
+const AirQualityGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+`;
+
+const AirQualityItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border-left: 3px solid ${props => {
+    const grade = props.$grade;
+    if (grade === '좋음') return '#10b981';
+    if (grade === '보통') return '#3b82f6';
+    if (grade === '나쁨') return '#f59e0b';
+    if (grade === '매우나쁨') return '#ef4444';
+    return '#9ca3af';
+  }};
+`;
+
+const AirItemLabel = styled.div`
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+`;
+
+const AirItemValue = styled.div`
+  text-align: right;
+`;
+
+const AirValue = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+`;
+
+const AirGrade = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+  color: ${props => {
+    const grade = props.$grade;
+    if (grade === '좋음') return '#10b981';
+    if (grade === '보통') return '#3b82f6';
+    if (grade === '나쁨') return '#f59e0b';
+    if (grade === '매우나쁨') return '#ef4444';
+    return '#9ca3af';
+  }};
+`;
+
+// 재난 문자 스타일
+const DisasterContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const DisasterBox = styled.div`
+  padding: 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+`;
+
+const DisasterHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #fecaca;
+`;
+
+const DisasterType = styled.div`
+  font-size: 14px;
+  font-weight: 700;
+  color: #991b1b;
+`;
+
+const DisasterRegion = styled.div`
+  font-size: 12px;
+  color: #991b1b;
+  font-weight: 600;
+`;
+
+const DisasterTime = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+`;
+
+const DisasterContent = styled.div`
+  font-size: 13px;
+  color: #1a1a1a;
+  line-height: 1.5;
 `;
 
 const EmptyStateContainer = styled.div`
@@ -94,73 +300,52 @@ const EmptyStateContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  flex: 1;
+  padding: 3rem 1rem;
   text-align: center;
 `;
 
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background-color: #f3f4f6;
-  margin-bottom: 16px;
-  
-  svg {
-    width: 32px;
-    height: 32px;
-    color: #9ca3af;
-  }
+const EmptyIcon = styled.div`
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.3;
 `;
 
 const EmptyMessage = styled.p`
-  font-size: 14px;
+  font-size: 0.95rem;
   color: #6b7280;
   margin: 0;
-  line-height: 1.5;
 `;
 
-const EmptyState = ({ icon: Icon, message }) => {
+const EmptyState = ({ icon, message }) => {
   return (
     <EmptyStateContainer>
-      <IconWrapper>
-        <Icon />
-      </IconWrapper>
+      <EmptyIcon>{icon}</EmptyIcon>
       <EmptyMessage>{message}</EmptyMessage>
     </EmptyStateContainer>
   );
 };
 
-const DataCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-`;
-
-const DataRow = styled.div`
+const LoadingSpinner = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
+  justify-content: center;
+  flex: 1;
+  padding: 3rem;
   
-  &:last-child {
-    border-bottom: none;
+  &::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
-`;
-
-const DataLabel = styled.span`
-  font-size: 14px;
-  color: #6b7280;
-`;
-
-const DataValue = styled.span`
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 `;
 
 function APIManagement() {
@@ -227,115 +412,154 @@ function APIManagement() {
         <LastUpdate>
           마지막 업데이트: {formatDateTime(lastUpdate)}
         </LastUpdate>
-        <RefreshButton onClick={handleRefresh} disabled={isRefreshing}>
+        <RefreshButton onClick={handleRefresh} disabled={isRefreshing || loading}>
           <RefreshCw size={18} />
           전체 새로고침
         </RefreshButton>
       </HeaderSection>
 
-      <ContentContainer>
-        {/* 날씨 정보 */}
-        <Column>
-          <ColumnTitle>날씨 정보</ColumnTitle>
+      <CardsContainer>
+        {/* 날씨 정보 카드 */}
+        <Card>
+          <CardHeader>
+            <CardIcon>☁️</CardIcon>
+            <CardTitle>날씨 정보</CardTitle>
+          </CardHeader>
+          <Divider />
+          
           {loading ? (
-            <EmptyState icon={CloudRain} message="날씨 데이터를 불러오는 중..." />
+            <LoadingSpinner />
           ) : weatherData ? (
-            <DataCard>
-              <DataRow>
-                <DataLabel>지역</DataLabel>
-                <DataValue>{weatherData.region || '유성구'}</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>현재 기온</DataLabel>
-                <DataValue>{weatherData.temperature}°C</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>최저 / 최고</DataLabel>
-                <DataValue>{weatherData.minTemperature}°C / {weatherData.maxTemperature}°C</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>날씨</DataLabel>
-                <DataValue>{weatherData.condition}</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>강수 확률</DataLabel>
-                <DataValue>{weatherData.precipitationProbability}%</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>습도</DataLabel>
-                <DataValue>{weatherData.humidity}%</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>풍속</DataLabel>
-                <DataValue>{weatherData.windSpeed} m/s</DataValue>
-              </DataRow>
-            </DataCard>
+            <>
+              <WeatherMainStatus>
+                <WeatherCondition>
+                  {weatherData.condition?.includes('맑') ? <Sun /> : <Cloud />}
+                  {weatherData.condition || '정보없음'}
+                </WeatherCondition>
+              </WeatherMainStatus>
+              
+              <WeatherGrid>
+                <WeatherItem>
+                  <WeatherLabel>기온</WeatherLabel>
+                  <WeatherValue>{weatherData.temperature}℃</WeatherValue>
+                </WeatherItem>
+                <WeatherItem>
+                  <WeatherLabel>체감온도</WeatherLabel>
+                  <WeatherValue>{weatherData.feelsLike || weatherData.temperature}℃</WeatherValue>
+                </WeatherItem>
+                <WeatherItem>
+                  <WeatherLabel>습도</WeatherLabel>
+                  <WeatherValue>{weatherData.humidity}%</WeatherValue>
+                </WeatherItem>
+                <WeatherItem>
+                  <WeatherLabel>풍속</WeatherLabel>
+                  <WeatherValue>{weatherData.windSpeed} m/s</WeatherValue>
+                </WeatherItem>
+                <WeatherItem>
+                  <WeatherLabel>최저 기온</WeatherLabel>
+                  <WeatherValue>{weatherData.minTemperature}℃</WeatherValue>
+                </WeatherItem>
+                <WeatherItem>
+                  <WeatherLabel>최고 기온</WeatherLabel>
+                  <WeatherValue>{weatherData.maxTemperature}℃</WeatherValue>
+                </WeatherItem>
+              </WeatherGrid>
+            </>
           ) : (
-            <EmptyState icon={CloudRain} message="날씨 데이터를 불러올 수 없습니다" />
+            <EmptyState icon="☁️" message="날씨 데이터를 불러올 수 없습니다" />
           )}
-        </Column>
+        </Card>
 
-        {/* 대기질 정보 */}
-        <Column>
-          <ColumnTitle>대기질 정보</ColumnTitle>
+        {/* 대기질 정보 카드 */}
+        <Card>
+          <CardHeader>
+            <CardIcon>🌫</CardIcon>
+            <CardTitle>대기질 정보</CardTitle>
+          </CardHeader>
+          <Divider />
+          
           {loading ? (
-            <EmptyState icon={Wind} message="대기질 데이터를 불러오는 중..." />
+            <LoadingSpinner />
           ) : airQualityData ? (
-            <DataCard>
-              <DataRow>
-                <DataLabel>측정소</DataLabel>
-                <DataValue>{airQualityData.stationName || '유성구'}</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>통합 지수</DataLabel>
-                <DataValue>{airQualityData.khaiValue} ({airQualityData.khaiGrade})</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>미세먼지 (PM10)</DataLabel>
-                <DataValue>{airQualityData.pm10Value} ㎍/㎥ ({airQualityData.pm10Grade})</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>초미세먼지 (PM2.5)</DataLabel>
-                <DataValue>{airQualityData.pm25Value} ㎍/㎥ ({airQualityData.pm25Grade})</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>오존 (O3)</DataLabel>
-                <DataValue>{airQualityData.o3Value} ppm</DataValue>
-              </DataRow>
-              <DataRow>
-                <DataLabel>이산화질소 (NO2)</DataLabel>
-                <DataValue>{airQualityData.no2Value} ppm</DataValue>
-              </DataRow>
-            </DataCard>
+            <DistrictContainer>
+              <DistrictBox>
+                <DistrictHeader>{airQualityData.stationName || '유성구'}</DistrictHeader>
+                <AirQualityGrid>
+                  <AirQualityItem $grade={airQualityData.pm10Grade}>
+                    <AirItemLabel>PM10</AirItemLabel>
+                    <AirItemValue>
+                      <AirValue>{airQualityData.pm10Value}</AirValue>
+                      <AirGrade $grade={airQualityData.pm10Grade}>
+                        {airQualityData.pm10Grade || '-'}
+                      </AirGrade>
+                    </AirItemValue>
+                  </AirQualityItem>
+                  
+                  <AirQualityItem $grade={airQualityData.pm25Grade}>
+                    <AirItemLabel>PM2.5</AirItemLabel>
+                    <AirItemValue>
+                      <AirValue>{airQualityData.pm25Value}</AirValue>
+                      <AirGrade $grade={airQualityData.pm25Grade}>
+                        {airQualityData.pm25Grade || '-'}
+                      </AirGrade>
+                    </AirItemValue>
+                  </AirQualityItem>
+                  
+                  <AirQualityItem>
+                    <AirItemLabel>통합지수</AirItemLabel>
+                    <AirItemValue>
+                      <AirValue>{airQualityData.khaiValue}</AirValue>
+                      <AirGrade $grade={airQualityData.khaiGrade}>
+                        {airQualityData.khaiGrade || '-'}
+                      </AirGrade>
+                    </AirItemValue>
+                  </AirQualityItem>
+                  
+                  <AirQualityItem>
+                    <AirItemLabel>오존(O₃)</AirItemLabel>
+                    <AirItemValue>
+                      <AirValue>{airQualityData.o3Value}</AirValue>
+                      <AirGrade>ppm</AirGrade>
+                    </AirItemValue>
+                  </AirQualityItem>
+                </AirQualityGrid>
+              </DistrictBox>
+            </DistrictContainer>
           ) : (
-            <EmptyState icon={Wind} message="대기질 데이터를 불러올 수 없습니다" />
+            <EmptyState icon="💨" message="대기질 데이터를 불러올 수 없습니다" />
           )}
-        </Column>
+        </Card>
 
-        {/* 재난 문자 현황 */}
-        <Column>
-          <ColumnTitle>재난 문자 현황</ColumnTitle>
+        {/* 재난 정보 카드 */}
+        <Card>
+          <CardHeader>
+            <CardIcon>🚨</CardIcon>
+            <CardTitle>재난 정보</CardTitle>
+          </CardHeader>
+          <Divider />
+          
           {loading ? (
-            <EmptyState icon={AlertCircle} message="재난 문자를 불러오는 중..." />
+            <LoadingSpinner />
           ) : disasterData && disasterData.length > 0 ? (
-            <DataCard>
-              {disasterData.slice(0, 5).map((disaster, index) => (
-                <DataRow key={index}>
-                  <div style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-                    <DataLabel style={{marginBottom: '4px'}}>{disaster.create_date}</DataLabel>
-                    <DataValue style={{fontSize: '13px'}}>{disaster.msg}</DataValue>
-                  </div>
-                </DataRow>
+            <DisasterContainer>
+              {disasterData.slice(0, 3).map((disaster, index) => (
+                <DisasterBox key={index}>
+                  <DisasterHeader>
+                    <DisasterType>{disaster.disaster_type || '재난'}</DisasterType>
+                    <DisasterRegion>{disaster.location_name || '대전 유성구'}</DisasterRegion>
+                  </DisasterHeader>
+                  <DisasterTime>발생 시각: {disaster.create_date}</DisasterTime>
+                  <DisasterContent>{disaster.msg}</DisasterContent>
+                </DisasterBox>
               ))}
-            </DataCard>
+            </DisasterContainer>
           ) : (
-            <EmptyState icon={AlertCircle} message="최근 재난 문자가 없습니다" />
+            <EmptyState icon="✅" message="현재 발생한 재난 정보가 없습니다" />
           )}
-        </Column>
-      </ContentContainer>
+        </Card>
+      </CardsContainer>
     </PageContainer>
   );
 }
 
 export default APIManagement;
-

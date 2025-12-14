@@ -23,11 +23,11 @@ const IconWrapper = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 10px;
-  background-color: ${props => props.bgColor || '#eff6ff'};
+  background-color: ${props => props.$bgColor || '#eff6ff'};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${props => props.iconColor || '#2563eb'};
+  color: ${props => props.$iconColor || '#2563eb'};
   flex-shrink: 0;
 `;
 
@@ -51,7 +51,7 @@ const CardTitle = styled.h3`
 const CardValue = styled.div`
   font-size: 32px;
   font-weight: 700;
-  color: ${props => props.isStatus ? '#10b981' : '#1a1a1a'};
+  color: ${props => props.$isStatus ? '#10b981' : '#1a1a1a'};
   line-height: 1.2;
   white-space: nowrap;
   flex-shrink: 0;
@@ -59,7 +59,7 @@ const CardValue = styled.div`
 
 const CardChange = styled.div`
   font-size: 13px;
-  color: ${props => props.isPositive ? '#10b981' : '#ef4444'};
+  color: ${props => props.$isPositive ? '#10b981' : '#ef4444'};
   font-weight: 500;
 `;
 
@@ -74,17 +74,17 @@ function StatCard({ title, value, valueSuffix, change, icon: Icon, iconColor, bg
     <CardContainer>
       <CardContent>
         {Icon && (
-          <IconWrapper bgColor={bgColor} iconColor={iconColor}>
+          <IconWrapper $bgColor={bgColor} $iconColor={iconColor}>
             <Icon size={24} />
           </IconWrapper>
         )}
         <TextSection>
           <CardTitle>{title}</CardTitle>
-          <CardValue isStatus={isStatus}>
+          <CardValue $isStatus={isStatus}>
             {displayValue}{valueSuffix || ''}
           </CardValue>
           {change && (
-            <CardChange isPositive={isPositive}>
+            <CardChange $isPositive={isPositive}>
               {isPositive ? '↑' : '↓'} {change}
             </CardChange>
           )}

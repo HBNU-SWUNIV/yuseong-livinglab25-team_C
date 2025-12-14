@@ -404,7 +404,7 @@ function Settings() {
                 <TableCell>{admin.name}</TableCell>
                 <TableCell>{admin.email}</TableCell>
                 <TableCell>
-                  <Badge variant={admin.role}>
+                  <Badge $variant={admin.role}>
                     {admin.role === 'super' ? '슈퍼 관리자' : '일반 뷰어'}
                   </Badge>
                 </TableCell>

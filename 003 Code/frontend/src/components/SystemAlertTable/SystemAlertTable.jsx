@@ -111,7 +111,7 @@ function SystemAlertTable({ data = [] }) {
                 <TableCell>{row.title}</TableCell>
                 <TableCell>{row.alertId}</TableCell>
                 <TableCell>
-                  <Badge variant={getSeverityVariant(row.severity)}>
+                  <Badge $variant={getSeverityVariant(row.severity)}>
                     {row.severity}
                   </Badge>
                 </TableCell>

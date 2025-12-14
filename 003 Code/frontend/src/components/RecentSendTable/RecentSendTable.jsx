@@ -119,7 +119,7 @@ function RecentSendTable({ data = [] }) {
                 <TableCell>{row.recipientCount}명</TableCell>
                 <TableCell>{row.sendMethod}</TableCell>
                 <TableCell>
-                  <Badge variant={row.status === '성공' ? 'success' : 'error'}>
+                  <Badge $variant={row.status === '성공' ? 'success' : 'error'}>
                     {row.status}
                   </Badge>
                 </TableCell>

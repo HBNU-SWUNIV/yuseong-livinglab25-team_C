@@ -106,7 +106,7 @@ function CustomNotificationRow({ recipient, isSelected, onSelect }) {
       <TableCell>{recipient.address}</TableCell>
       <TableCell>{recipient.consent ? '동의' : '비동의'}</TableCell>
       <TableCell>
-        <Badge variant={getMessageTypeVariant(recipient.messageType)}>
+        <Badge $variant={getMessageTypeVariant(recipient.messageType)}>
           {recipient.messageType}
         </Badge>
       </TableCell>

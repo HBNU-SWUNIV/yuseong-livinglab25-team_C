@@ -84,7 +84,7 @@ function MessageHistoryRow({ message, isSelected, onSelect }) {
       </TableCell>
       <TableCell>{message.no}</TableCell>
       <TableCell>
-        <Badge variant={getMessageTypeVariant(message.messageType)}>
+        <Badge $variant={getMessageTypeVariant(message.messageType)}>
           {message.messageType}
         </Badge>
       </TableCell>
