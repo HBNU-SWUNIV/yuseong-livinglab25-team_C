@@ -1,5 +1,5 @@
-const BaseModel = require('./BaseModel');
-const logger = require('../utils/logger');
+const BaseModel = require("./BaseModel");
+const logger = require("../utils/logger");
 
 /**
  * 수신자 모델
@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
  */
 class Recipient extends BaseModel {
   constructor() {
-    super('recipients');
+    super("recipients");
   }
 
   /**
@@ -18,44 +18,44 @@ class Recipient extends BaseModel {
 
     // 필수 필드 검증
     if (!data.name || data.name.trim().length === 0) {
-      errors.push('이름은 필수 입력 항목입니다.');
+      errors.push("이름은 필수 입력 항목입니다.");
     }
 
     if (!data.phone_number || data.phone_number.trim().length === 0) {
-      errors.push('전화번호는 필수 입력 항목입니다.');
+      errors.push("전화번호는 필수 입력 항목입니다.");
     }
 
     // 이름 길이 검증
     if (data.name && data.name.length > 50) {
-      errors.push('이름은 50자를 초과할 수 없습니다.');
+      errors.push("이름은 50자를 초과할 수 없습니다.");
     }
 
     // 전화번호 형식 검증
     if (data.phone_number) {
       const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
-      if (!phoneRegex.test(data.phone_number.replace(/[^0-9]/g, ''))) {
-        errors.push('올바른 전화번호 형식이 아닙니다.');
+      if (!phoneRegex.test(data.phone_number.replace(/[^0-9]/g, ""))) {
+        errors.push("올바른 전화번호 형식이 아닙니다.");
       }
     }
 
     // 주소 길이 검증
     if (data.address && data.address.length > 200) {
-      errors.push('주소는 200자를 초과할 수 없습니다.');
+      errors.push("주소는 200자를 초과할 수 없습니다.");
     }
 
     // 생년월일 형식 검증
     if (data.birth_date) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(data.birth_date)) {
-        errors.push('생년월일은 YYYY-MM-DD 형식이어야 합니다.');
+        errors.push("생년월일은 YYYY-MM-DD 형식이어야 합니다.");
       }
     }
 
     // 비상연락처 형식 검증
     if (data.emergency_contact) {
       const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
-      if (!phoneRegex.test(data.emergency_contact.replace(/[^0-9]/g, ''))) {
-        errors.push('올바른 비상연락처 형식이 아닙니다.');
+      if (!phoneRegex.test(data.emergency_contact.replace(/[^0-9]/g, ""))) {
+        errors.push("올바른 비상연락처 형식이 아닙니다.");
       }
     }
 
@@ -66,7 +66,7 @@ class Recipient extends BaseModel {
    * 전화번호 정규화 (하이픈 제거)
    */
   normalizePhoneNumber(phoneNumber) {
-    return phoneNumber.replace(/[^0-9]/g, '');
+    return phoneNumber.replace(/[^0-9]/g, "");
   }
 
   /**
@@ -76,31 +76,37 @@ class Recipient extends BaseModel {
     // 데이터 유효성 검증
     const validationErrors = this.validateRecipientData(data);
     if (validationErrors.length > 0) {
-      throw new Error(`유효성 검증 실패: ${validationErrors.join(', ')}`);
+      throw new Error(`유효성 검증 실패: ${validationErrors.join(", ")}`);
     }
 
     // 전화번호 정규화
     const normalizedData = {
       ...data,
-      phone_number: this.normalizePhoneNumber(data.phone_number)
+      phone_number: this.normalizePhoneNumber(data.phone_number),
     };
 
     if (normalizedData.emergency_contact) {
-      normalizedData.emergency_contact = this.normalizePhoneNumber(normalizedData.emergency_contact);
+      normalizedData.emergency_contact = this.normalizePhoneNumber(
+        normalizedData.emergency_contact
+      );
     }
 
     // 중복 전화번호 확인
-    const existingRecipient = await this.findByPhoneNumber(normalizedData.phone_number);
+    const existingRecipient = await this.findByPhoneNumber(
+      normalizedData.phone_number
+    );
     if (existingRecipient) {
-      throw new Error('이미 등록된 전화번호입니다.');
+      throw new Error("이미 등록된 전화번호입니다.");
     }
 
     try {
       const recipientId = await this.create(normalizedData);
-      logger.info(`새 수신자 등록: ID ${recipientId}, 전화번호 ${normalizedData.phone_number}`);
+      logger.info(
+        `새 수신자 등록: ID ${recipientId}, 전화번호 ${normalizedData.phone_number}`
+      );
       return recipientId;
     } catch (error) {
-      logger.error('수신자 생성 실패:', error);
+      logger.error("수신자 생성 실패:", error);
       throw error;
     }
   }
@@ -110,7 +116,7 @@ class Recipient extends BaseModel {
    */
   async findByPhoneNumber(phoneNumber) {
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
-    const query = 'SELECT * FROM recipients WHERE phone_number = ?';
+    const query = "SELECT * FROM recipients WHERE phone_number = ?";
     const results = await this.executeQuery(query, [normalizedPhone]);
     return results[0] || null;
   }
@@ -119,7 +125,7 @@ class Recipient extends BaseModel {
    * 활성 수신자 목록 조회
    */
   async findActiveRecipients() {
-    return await this.findAll({ is_active: true }, 'name ASC');
+    return await this.findAll({ is_active: true }, "name ASC");
   }
 
   /**
@@ -133,11 +139,11 @@ class Recipient extends BaseModel {
     const params = [`%${searchTerm}%`, `%${searchTerm}%`];
 
     if (isActiveOnly) {
-      query += ' AND is_active = ?';
+      query += " AND is_active = ?";
       params.push(true);
     }
 
-    query += ' ORDER BY name ASC';
+    query += " ORDER BY name ASC";
 
     return await this.executeQuery(query, params);
   }
@@ -151,56 +157,62 @@ class Recipient extends BaseModel {
 
     // 이름 길이 검증
     if (data.name && data.name.length > 50) {
-      validationErrors.push('이름은 50자를 초과할 수 없습니다.');
+      validationErrors.push("이름은 50자를 초과할 수 없습니다.");
     }
 
     // 전화번호 형식 검증 (있는 경우에만)
     if (data.phone_number) {
       const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
-      if (!phoneRegex.test(data.phone_number.replace(/[^0-9]/g, ''))) {
-        validationErrors.push('올바른 전화번호 형식이 아닙니다.');
+      if (!phoneRegex.test(data.phone_number.replace(/[^0-9]/g, ""))) {
+        validationErrors.push("올바른 전화번호 형식이 아닙니다.");
       }
     }
 
     // 주소 길이 검증
     if (data.address && data.address.length > 200) {
-      validationErrors.push('주소는 200자를 초과할 수 없습니다.');
+      validationErrors.push("주소는 200자를 초과할 수 없습니다.");
     }
 
     // 생년월일 형식 검증
     if (data.birth_date) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(data.birth_date)) {
-        validationErrors.push('생년월일은 YYYY-MM-DD 형식이어야 합니다.');
+        validationErrors.push("생년월일은 YYYY-MM-DD 형식이어야 합니다.");
       }
     }
 
     // 비상연락처 형식 검증
     if (data.emergency_contact) {
       const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
-      if (!phoneRegex.test(data.emergency_contact.replace(/[^0-9]/g, ''))) {
-        validationErrors.push('올바른 비상연락처 형식이 아닙니다.');
+      if (!phoneRegex.test(data.emergency_contact.replace(/[^0-9]/g, ""))) {
+        validationErrors.push("올바른 비상연락처 형식이 아닙니다.");
       }
     }
 
     if (validationErrors.length > 0) {
-      throw new Error(`유효성 검증 실패: ${validationErrors.join(', ')}`);
+      throw new Error(`유효성 검증 실패: ${validationErrors.join(", ")}`);
     }
 
     // 전화번호 정규화
     const normalizedData = { ...data };
     if (normalizedData.phone_number) {
-      normalizedData.phone_number = this.normalizePhoneNumber(normalizedData.phone_number);
-      
+      normalizedData.phone_number = this.normalizePhoneNumber(
+        normalizedData.phone_number
+      );
+
       // 다른 수신자와 전화번호 중복 확인
-      const existingRecipient = await this.findByPhoneNumber(normalizedData.phone_number);
+      const existingRecipient = await this.findByPhoneNumber(
+        normalizedData.phone_number
+      );
       if (existingRecipient && existingRecipient.id !== parseInt(id)) {
-        throw new Error('이미 등록된 전화번호입니다.');
+        throw new Error("이미 등록된 전화번호입니다.");
       }
     }
 
     if (normalizedData.emergency_contact) {
-      normalizedData.emergency_contact = this.normalizePhoneNumber(normalizedData.emergency_contact);
+      normalizedData.emergency_contact = this.normalizePhoneNumber(
+        normalizedData.emergency_contact
+      );
     }
 
     try {
@@ -210,7 +222,7 @@ class Recipient extends BaseModel {
       }
       return success;
     } catch (error) {
-      logger.error('수신자 수정 실패:', error);
+      logger.error("수신자 수정 실패:", error);
       throw error;
     }
   }
@@ -226,7 +238,7 @@ class Recipient extends BaseModel {
       }
       return success;
     } catch (error) {
-      logger.error('수신자 비활성화 실패:', error);
+      logger.error("수신자 비활성화 실패:", error);
       throw error;
     }
   }
@@ -242,7 +254,7 @@ class Recipient extends BaseModel {
       }
       return success;
     } catch (error) {
-      logger.error('수신자 활성화 실패:', error);
+      logger.error("수신자 활성화 실패:", error);
       throw error;
     }
   }
@@ -254,7 +266,7 @@ class Recipient extends BaseModel {
     const results = {
       success: 0,
       failed: 0,
-      errors: []
+      errors: [],
     };
 
     for (const [index, row] of csvData.entries()) {
@@ -266,12 +278,14 @@ class Recipient extends BaseModel {
         results.errors.push({
           row: index + 1,
           data: row,
-          error: error.message
+          error: error.message,
         });
       }
     }
 
-    logger.info(`일괄 등록 완료: 성공 ${results.success}건, 실패 ${results.failed}건`);
+    logger.info(
+      `일괄 등록 완료: 성공 ${results.success}건, 실패 ${results.failed}건`
+    );
     return results;
   }
 
@@ -280,9 +294,17 @@ class Recipient extends BaseModel {
    */
   async getRecipientStats() {
     const queries = [
-      { key: 'total', query: 'SELECT COUNT(*) as count FROM recipients' },
-      { key: 'active', query: 'SELECT COUNT(*) as count FROM recipients WHERE is_active = true' },
-      { key: 'inactive', query: 'SELECT COUNT(*) as count FROM recipients WHERE is_active = false' }
+      { key: "total", query: "SELECT COUNT(*) as count FROM recipients" },
+      {
+        key: "active",
+        query:
+          "SELECT COUNT(*) as count FROM recipients WHERE is_active = true",
+      },
+      {
+        key: "inactive",
+        query:
+          "SELECT COUNT(*) as count FROM recipients WHERE is_active = false",
+      },
     ];
 
     const stats = {};
@@ -298,49 +320,56 @@ class Recipient extends BaseModel {
    * 페이지네이션과 검색을 지원하는 수신자 목록 조회
    */
   async findAll(options = {}) {
-    const { 
-      page = 1, 
-      limit = 20, 
-      search, 
+    const {
+      page = 1,
+      limit = 20,
+      search,
       is_active,
-      sortBy = 'created_at',
-      sortOrder = 'desc'
+      sortBy = "created_at",
+      sortOrder = "desc",
     } = options;
 
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE 1=1';
+    let whereClause = "WHERE 1=1";
     const params = [];
 
     // 활성 상태 필터
     if (is_active !== undefined) {
-      whereClause += ' AND is_active = ?';
+      whereClause += " AND is_active = ?";
       params.push(is_active);
     }
 
     // 검색 조건
     if (search) {
-      whereClause += ' AND (name LIKE ? OR phone_number LIKE ?)';
+      whereClause += " AND (name LIKE ? OR phone_number LIKE ?)";
       params.push(`%${search}%`, `%${search}%`);
     }
 
     // 정렬 조건
-    const allowedSortFields = ['name', 'phone_number', 'created_at', 'updated_at'];
-    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
-    const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    const allowedSortFields = [
+      "name",
+      "phone_number",
+      "created_at",
+      "updated_at",
+    ];
+    const sortField = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : "created_at";
+    const sortDirection = sortOrder.toLowerCase() === "asc" ? "ASC" : "DESC";
 
     const query = `
       SELECT * FROM recipients 
       ${whereClause}
       ORDER BY ${sortField} ${sortDirection}
-      LIMIT ? OFFSET ?
+      LIMIT ${Number(limit)} OFFSET ${Number(offset)}
     `;
 
-    params.push(limit, offset);
+    // params.push(limit, offset);
     const results = await this.executeQuery(query, params);
 
     // 총 개수 조회
     const countQuery = `SELECT COUNT(*) as total FROM recipients ${whereClause}`;
-    const countParams = params.slice(0, -2); // limit, offset 제외
+    const countParams = params; // limit, offset 제외
     const countResult = await this.executeQuery(countQuery, countParams);
     const total = countResult[0].total;
 
@@ -350,8 +379,8 @@ class Recipient extends BaseModel {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -376,27 +405,30 @@ class Recipient extends BaseModel {
    * 통계 정보 조회
    */
   async getStatistics() {
-    const totalQuery = 'SELECT COUNT(*) as total FROM recipients';
-    const activeQuery = 'SELECT COUNT(*) as active FROM recipients WHERE is_active = true';
-    const inactiveQuery = 'SELECT COUNT(*) as inactive FROM recipients WHERE is_active = false';
+    const totalQuery = "SELECT COUNT(*) as total FROM recipients";
+    const activeQuery =
+      "SELECT COUNT(*) as active FROM recipients WHERE is_active = true";
+    const inactiveQuery =
+      "SELECT COUNT(*) as inactive FROM recipients WHERE is_active = false";
     const recentQuery = `
       SELECT COUNT(*) as recent 
       FROM recipients 
       WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `;
 
-    const [totalResult, activeResult, inactiveResult, recentResult] = await Promise.all([
-      this.executeQuery(totalQuery),
-      this.executeQuery(activeQuery),
-      this.executeQuery(inactiveQuery),
-      this.executeQuery(recentQuery)
-    ]);
+    const [totalResult, activeResult, inactiveResult, recentResult] =
+      await Promise.all([
+        this.executeQuery(totalQuery),
+        this.executeQuery(activeQuery),
+        this.executeQuery(inactiveQuery),
+        this.executeQuery(recentQuery),
+      ]);
 
     return {
       total: totalResult[0].total,
       active: activeResult[0].active,
       inactive: inactiveResult[0].inactive,
-      recent: recentResult[0].recent
+      recent: recentResult[0].recent,
     };
   }
 }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import styled from 'styled-components';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from "react";
+import styled from "styled-components";
+import { X } from "lucide-react";
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -23,7 +23,8 @@ const ModalContainer = styled.div`
   max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 `;
 
 const ModalHeader = styled.div`
@@ -52,7 +53,7 @@ const CloseButton = styled.button`
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #f3f4f6;
     color: #1a1a1a;
@@ -80,23 +81,25 @@ const Required = styled.span`
 const Input = styled.input`
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid ${props => props.hasError ? '#ef4444' : '#e5e7eb'};
+  border: 1px solid ${(props) => (props.hasError ? "#ef4444" : "#e5e7eb")};
   border-radius: 8px;
   font-size: 14px;
   color: #1a1a1a;
   transition: all 0.2s ease;
   box-sizing: border-box;
-  
+
   &:hover {
-    border-color: ${props => props.hasError ? '#ef4444' : '#d1d5db'};
+    border-color: ${(props) => (props.hasError ? "#ef4444" : "#d1d5db")};
   }
-  
+
   &:focus {
     outline: none;
-    border-color: ${props => props.hasError ? '#ef4444' : '#2563eb'};
-    box-shadow: 0 0 0 3px ${props => props.hasError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(37, 99, 235, 0.1)'};
+    border-color: ${(props) => (props.hasError ? "#ef4444" : "#2563eb")};
+    box-shadow: 0 0 0 3px
+      ${(props) =>
+        props.hasError ? "rgba(239, 68, 68, 0.1)" : "rgba(37, 99, 235, 0.1)"};
   }
-  
+
   &::placeholder {
     color: #9ca3af;
   }
@@ -121,7 +124,7 @@ const CheckboxLabel = styled.label`
   font-size: 14px;
   color: #374151;
   cursor: pointer;
-  
+
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
@@ -147,6 +150,7 @@ const ButtonGroup = styled.div`
   border-top: 1px solid #e5e7eb;
 `;
 
+// [수정 포인트 1] props.primary -> props.$primary 로 변경
 const Button = styled.button`
   padding: 10px 20px;
   border-radius: 8px;
@@ -154,16 +158,16 @@ const Button = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid ${props => props.primary ? '#2563eb' : '#e5e7eb'};
-  background-color: ${props => props.primary ? '#2563eb' : '#ffffff'};
-  color: ${props => props.primary ? '#ffffff' : '#374151'};
+  border: 1px solid ${(props) => (props.$primary ? "#2563eb" : "#e5e7eb")};
+  background-color: ${(props) => (props.$primary ? "#2563eb" : "#ffffff")};
+  color: ${(props) => (props.$primary ? "#ffffff" : "#374151")};
   min-width: 80px;
-  
+
   &:hover:not(:disabled) {
-    background-color: ${props => props.primary ? '#1d4ed8' : '#f9fafb'};
-    border-color: ${props => props.primary ? '#1d4ed8' : '#d1d5db'};
+    background-color: ${(props) => (props.$primary ? "#1d4ed8" : "#f9fafb")};
+    border-color: ${(props) => (props.$primary ? "#1d4ed8" : "#d1d5db")};
   }
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -172,29 +176,32 @@ const Button = styled.button`
 
 // 전화번호 자동 포맷 함수
 const formatPhoneNumber = (value) => {
-  const numbers = value.replace(/[^\d]/g, '');
-  
+  const numbers = value.replace(/[^\d]/g, "");
+
   if (numbers.length <= 3) {
     return numbers;
   } else if (numbers.length <= 7) {
     return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
   } else {
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(
+      7,
+      11
+    )}`;
   }
 };
 
 // 전화번호 유효성 검사
 const isValidPhoneNumber = (phone) => {
-  const numbers = phone.replace(/[^\d]/g, '');
-  return numbers.length === 11 && numbers.startsWith('010');
+  const numbers = phone.replace(/[^\d]/g, "");
+  return numbers.length === 11 && numbers.startsWith("010");
 };
 
 function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    birthDate: '',
-    address: '',
+    name: "",
+    phone: "",
+    birthDate: "",
+    address: "",
     consent: false,
     messageTypes: [],
   });
@@ -204,17 +211,17 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
 
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
 
@@ -225,25 +232,25 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
   };
 
   const handleChange = (field, value) => {
-    if (field === 'phone') {
+    if (field === "phone") {
       const formatted = formatPhoneNumber(value);
-      setFormData(prev => ({ ...prev, [field]: formatted }));
+      setFormData((prev) => ({ ...prev, [field]: formatted }));
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
-    
+
     // 입력 시 해당 필드 에러 제거
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const handleMessageTypeChange = (type, checked) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       messageTypes: checked
         ? [...prev.messageTypes, type]
-        : prev.messageTypes.filter(t => t !== type)
+        : prev.messageTypes.filter((t) => t !== type),
     }));
   };
 
@@ -252,21 +259,21 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
 
     // 성명 검증
     if (!formData.name.trim()) {
-      newErrors.name = '성명을 입력해주세요.';
+      newErrors.name = "성명을 입력해주세요.";
     }
 
     // 휴대폰 번호 검증
     if (!formData.phone.trim()) {
-      newErrors.phone = '휴대폰 번호를 입력해주세요.';
+      newErrors.phone = "휴대폰 번호를 입력해주세요.";
     } else if (!isValidPhoneNumber(formData.phone)) {
-      newErrors.phone = '올바른 휴대폰 번호를 입력해주세요. (010-xxxx-xxxx)';
+      newErrors.phone = "올바른 휴대폰 번호를 입력해주세요. (010-xxxx-xxxx)";
     } else if (existingPhones.includes(formData.phone)) {
-      newErrors.phone = '이미 등록된 수신자입니다.';
+      newErrors.phone = "이미 등록된 수신자입니다.";
     }
 
     // 수신 동의 검증
     if (!formData.consent) {
-      newErrors.consent = '메시지 수신 동의가 필요합니다.';
+      newErrors.consent = "메시지 수신 동의가 필요합니다.";
     }
 
     setErrors(newErrors);
@@ -288,17 +295,18 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
 
   const handleReset = () => {
     setFormData({
-      name: '',
-      phone: '',
-      birthDate: '',
-      address: '',
+      name: "",
+      phone: "",
+      birthDate: "",
+      address: "",
       consent: false,
       messageTypes: [],
     });
     setErrors({});
   };
 
-  const isSaveDisabled = !formData.name.trim() || !formData.phone.trim() || !formData.consent;
+  const isSaveDisabled =
+    !formData.name.trim() || !formData.phone.trim() || !formData.consent;
 
   if (!isOpen) return null;
 
@@ -320,7 +328,7 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
             type="text"
             placeholder="이름을 입력하세요"
             value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
+            onChange={(e) => handleChange("name", e.target.value)}
             hasError={!!errors.name}
           />
           {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
@@ -334,7 +342,7 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
             type="text"
             placeholder="010-0000-0000"
             value={formData.phone}
-            onChange={(e) => handleChange('phone', e.target.value)}
+            onChange={(e) => handleChange("phone", e.target.value)}
             hasError={!!errors.phone}
             maxLength={13}
           />
@@ -346,7 +354,7 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
           <Input
             type="date"
             value={formData.birthDate}
-            onChange={(e) => handleChange('birthDate', e.target.value)}
+            onChange={(e) => handleChange("birthDate", e.target.value)}
           />
         </FormGroup>
 
@@ -356,7 +364,7 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
             type="text"
             placeholder="주소를 입력하세요"
             value={formData.address}
-            onChange={(e) => handleChange('address', e.target.value)}
+            onChange={(e) => handleChange("address", e.target.value)}
           />
         </FormGroup>
 
@@ -369,7 +377,7 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
               <input
                 type="checkbox"
                 checked={formData.consent}
-                onChange={(e) => handleChange('consent', e.target.checked)}
+                onChange={(e) => handleChange("consent", e.target.checked)}
               />
               메시지 수신에 동의합니다
             </CheckboxLabel>
@@ -383,24 +391,30 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
             <CheckboxLabel>
               <input
                 type="checkbox"
-                checked={formData.messageTypes.includes('복지 알림')}
-                onChange={(e) => handleMessageTypeChange('복지 알림', e.target.checked)}
+                checked={formData.messageTypes.includes("복지 알림")}
+                onChange={(e) =>
+                  handleMessageTypeChange("복지 알림", e.target.checked)
+                }
               />
               복지 알림
             </CheckboxLabel>
             <CheckboxLabel>
               <input
                 type="checkbox"
-                checked={formData.messageTypes.includes('긴급 알림')}
-                onChange={(e) => handleMessageTypeChange('긴급 알림', e.target.checked)}
+                checked={formData.messageTypes.includes("긴급 알림")}
+                onChange={(e) =>
+                  handleMessageTypeChange("긴급 알림", e.target.checked)
+                }
               />
               긴급 알림
             </CheckboxLabel>
             <CheckboxLabel>
               <input
                 type="checkbox"
-                checked={formData.messageTypes.includes('맞춤 알림')}
-                onChange={(e) => handleMessageTypeChange('맞춤 알림', e.target.checked)}
+                checked={formData.messageTypes.includes("맞춤 알림")}
+                onChange={(e) =>
+                  handleMessageTypeChange("맞춤 알림", e.target.checked)
+                }
               />
               맞춤 알림
             </CheckboxLabel>
@@ -409,7 +423,8 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
 
         <ButtonGroup>
           <Button onClick={handleCancel}>취소</Button>
-          <Button primary onClick={handleSave} disabled={isSaveDisabled}>
+          {/* [수정 포인트 2] primary -> $primary 로 변경 */}
+          <Button $primary onClick={handleSave} disabled={isSaveDisabled}>
             저장
           </Button>
         </ButtonGroup>
@@ -419,8 +434,3 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
 }
 
 export default AddRecipientModal;
-
-
-
-
-

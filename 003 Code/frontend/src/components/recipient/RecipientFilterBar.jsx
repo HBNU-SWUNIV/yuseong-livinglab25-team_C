@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { Filter, Search, Upload, UserPlus, Calendar, RefreshCw } from 'lucide-react';
-import DateRangePicker from '../common/DateRangePicker';
+import React, { useState } from "react";
+import styled from "styled-components";
+import {
+  Filter,
+  Search,
+  Upload,
+  UserPlus,
+  Calendar,
+  RefreshCw,
+} from "lucide-react";
+import DateRangePicker from "../common/DateRangePicker";
 
 const FilterBarContainer = styled.div`
   display: flex;
@@ -11,7 +18,6 @@ const FilterBarContainer = styled.div`
   margin-bottom: 16px;
   flex-wrap: wrap;
 `;
-
 
 const FilterGroup = styled.div`
   display: flex;
@@ -34,6 +40,7 @@ const PeriodSegmentedControl = styled.div`
   gap: 4px;
 `;
 
+// [수정 포인트 1] active -> $active 로 변경
 const PeriodButton = styled.button`
   display: flex;
   align-items: center;
@@ -41,20 +48,22 @@ const PeriodButton = styled.button`
   padding: 6px 12px;
   border: none;
   border-radius: 6px;
-  background-color: ${props => props.active ? '#ffffff' : 'transparent'};
-  color: ${props => props.active ? '#2563eb' : '#6b7280'};
+  background-color: ${(props) => (props.$active ? "#ffffff" : "transparent")};
+  color: ${(props) => (props.$active ? "#2563eb" : "#6b7280")};
   font-size: 14px;
-  font-weight: ${props => props.active ? '600' : '500'};
+  font-weight: ${(props) => (props.$active ? "600" : "500")};
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  box-shadow: ${props => props.active ? '0 1px 2px rgba(0, 0, 0, 0.05)' : 'none'};
-  
+  box-shadow: ${(props) =>
+    props.$active ? "0 1px 2px rgba(0, 0, 0, 0.05)" : "none"};
+
   &:hover {
-    background-color: ${props => props.active ? '#ffffff' : 'rgba(255, 255, 255, 0.5)'};
-    color: ${props => props.active ? '#2563eb' : '#374151'};
+    background-color: ${(props) =>
+      props.$active ? "#ffffff" : "rgba(255, 255, 255, 0.5)"};
+    color: ${(props) => (props.$active ? "#2563eb" : "#374151")};
   }
-  
+
   svg {
     width: 16px;
     height: 16px;
@@ -73,12 +82,12 @@ const SmallRefreshButton = styled.button`
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #f3f4f6;
     color: #1a1a1a;
   }
-  
+
   svg {
     width: 18px;
     height: 18px;
@@ -100,17 +109,17 @@ const SearchInput = styled.input`
   font-size: 14px;
   color: #374151;
   transition: all 0.2s ease;
-  
+
   &:hover {
     border-color: #d1d5db;
   }
-  
+
   &:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
-  
+
   &::placeholder {
     color: #9ca3af;
   }
@@ -139,7 +148,7 @@ const IconButton = styled.button`
   color: #6b7280;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #f9fafb;
     border-color: #d1d5db;
@@ -160,12 +169,12 @@ const ActionButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #f9fafb;
     border-color: #d1d5db;
   }
-  
+
   svg {
     width: 18px;
     height: 18px;
@@ -176,17 +185,60 @@ const PrimaryButton = styled(ActionButton)`
   background-color: #2563eb;
   color: #ffffff;
   border-color: #2563eb;
-  
+
   &:hover {
     background-color: #1d4ed8;
     border-color: #1d4ed8;
   }
 `;
 
-function RecipientFilterBar({ 
+const fetchRecipients = async () => {
+  try {
+    setLoading(true);
+    console.log("📡 서버에 수신자 목록 요청 중..."); // [로그 1]
+
+    const response = await axios.get("/api/recipients");
+    console.log("📦 서버 응답 도착:", response.data); // [로그 2]
+
+    const rawData = response.data.data || response.data;
+
+    // 데이터가 비어있으면 로그 출력
+    if (!rawData || rawData.length === 0) {
+      console.warn("⚠️ 데이터가 비어있습니다 (DB에 수신자가 없거나 매핑 실패)");
+    }
+
+    const formattedData = rawData.map((item, index) => ({
+      id: item.id,
+      no: index + 1,
+      name: item.name,
+      phone: item.phone_number || item.phone, // DB 컬럼명 확인
+      address: item.address || "-",
+      birthDate: item.birth_date || "-",
+      consent: true,
+      messageType: "일반 메시지",
+      sendStatus: "pending",
+      registeredDate: item.created_at
+        ? item.created_at.substring(0, 10).replace(/-/g, ".")
+        : "-",
+    }));
+
+    setRecipients(formattedData);
+  } catch (error) {
+    console.error("❌ 수신자 목록 불러오기 실패:", error);
+    setToast({
+      type: "error",
+      title: "데이터 로드 실패",
+      message: "수신자 목록을 불러오지 못했습니다.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+function RecipientFilterBar({
   periodFilter,
   onPeriodChange,
-  searchQuery, 
+  searchQuery,
   onSearchChange,
   onFilterClick,
   onCSVUpload,
@@ -195,20 +247,20 @@ function RecipientFilterBar({
   onFullRefresh,
   customStartDate,
   customEndDate,
-  onCustomPeriodConfirm
+  onCustomPeriodConfirm,
 }) {
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 
   const periodOptions = [
-    { value: 'all', label: '전체' },
-    { value: '1month', label: '1개월' },
-    { value: '6months', label: '6개월' },
-    { value: '1year', label: '1년' },
-    { value: 'custom', label: '기간 설정', icon: Calendar },
+    { value: "all", label: "전체" },
+    { value: "1month", label: "1개월" },
+    { value: "6months", label: "6개월" },
+    { value: "1year", label: "1년" },
+    { value: "custom", label: "기간 설정", icon: Calendar },
   ];
 
   const handlePeriodClick = (value) => {
-    if (value === 'custom') {
+    if (value === "custom") {
       setIsPeriodModalOpen(true);
     } else {
       onPeriodChange(value);
@@ -216,17 +268,16 @@ function RecipientFilterBar({
   };
 
   const handleCustomPeriodConfirm = (startDate, endDate) => {
-    // Date 객체를 YYYY-MM-DD 문자열로 변환
     const formatDate = (date) => {
-      if (!date) return '';
+      if (!date) return "";
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     };
-    
+
     onCustomPeriodConfirm(formatDate(startDate), formatDate(endDate));
-    onPeriodChange('custom');
+    onPeriodChange("custom");
     setIsPeriodModalOpen(false);
   };
 
@@ -241,7 +292,8 @@ function RecipientFilterBar({
               return (
                 <PeriodButton
                   key={option.value}
-                  active={periodFilter === option.value}
+                  // [수정 포인트 2] active -> $active
+                  $active={periodFilter === option.value}
                   onClick={() => handlePeriodClick(option.value)}
                 >
                   {Icon && <Icon size={16} />}
@@ -250,11 +302,14 @@ function RecipientFilterBar({
               );
             })}
           </PeriodSegmentedControl>
-          <SmallRefreshButton onClick={onRefresh || (() => window.location.reload())} title="새로고침">
+          <SmallRefreshButton
+            onClick={onRefresh || (() => window.location.reload())}
+            title="새로고침"
+          >
             <RefreshCw size={18} />
           </SmallRefreshButton>
         </FilterGroup>
-        
+
         <SearchContainer>
           <SearchIcon />
           <SearchInput
@@ -264,17 +319,17 @@ function RecipientFilterBar({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </SearchContainer>
-        
+
         <ActionButton onClick={onCSVUpload}>
           <Upload size={18} />
           CSV 업로드
         </ActionButton>
-        
+
         <PrimaryButton onClick={onAddRecipient}>
           <UserPlus size={18} />
           수신자 추가
         </PrimaryButton>
-        
+
         <ActionButton onClick={onFullRefresh}>
           <RefreshCw size={18} />
           전체 새로고침
@@ -294,4 +349,3 @@ function RecipientFilterBar({
 }
 
 export default RecipientFilterBar;
-

@@ -176,7 +176,7 @@ let emergencyMonitoringService;
 
     try {
       await schedulerService.startAllSchedulers();
-      await emergencyMonitoringService.startMonitoring();
+      // await emergencyMonitoringService.startMonitoring();
       logger.info("✅ Scheduler services started successfully");
     } catch (schedulerError) {
       logger.warn(

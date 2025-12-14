@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
-import styled from 'styled-components';
-import RecipientHeader from '../../components/recipient/RecipientHeader';
-import RecipientFilterBar from '../../components/recipient/RecipientFilterBar';
-import RecipientTable from '../../components/recipient/RecipientTable';
-import Pagination from '../../components/common/Pagination';
-import AddRecipientModal from '../../components/recipient/AddRecipientModal';
-import Toast from '../../components/common/Toast';
+import React, { useState, useEffect, useMemo } from "react"; // useEffect 추가
+import styled from "styled-components";
+import axios from "axios"; // axios 추가
+import RecipientHeader from "../../components/recipient/RecipientHeader";
+import RecipientFilterBar from "../../components/recipient/RecipientFilterBar";
+import RecipientTable from "../../components/recipient/RecipientTable";
+import Pagination from "../../components/common/Pagination";
+import AddRecipientModal from "../../components/recipient/AddRecipientModal";
+import Toast from "../../components/common/Toast";
 
 const PageContainer = styled.div`
   padding: 32px;
@@ -13,104 +14,106 @@ const PageContainer = styled.div`
   min-width: 0;
 `;
 
-// 더미 데이터 생성 함수
-const generateRecipients = () => {
-  const names = ['김유성', '이대전', '박과학', '최연구', '정혁신', '강창업', '윤산업', '임기술', '한유성', '조대전'];
-  const addresses = [
-    '대전광역시 유성구 대학로 291',
-    '대전광역시 유성구 엑스포로 1',
-    '대전광역시 유성구 봉명동',
-    '대전광역시 유성구 온천동',
-    '대전광역시 유성구 노은동',
-  ];
-  const messageTypes = ['복지 알림', '긴급 알림', '일반 메시지'];
-  const sendStatuses = ['success', 'failed', 'pending'];
-  
-  const today = new Date();
-  return Array.from({ length: 50 }, (_, index) => {
-    const registeredDate = new Date(today);
-    registeredDate.setDate(registeredDate.getDate() - Math.floor(Math.random() * 365));
-    
-    const lastSentDate = Math.random() > 0.3 
-      ? new Date(today.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000)
-      : null;
-    
-    const birthYear = 1950 + Math.floor(Math.random() * 50);
-    const birthMonth = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
-    const birthDay = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
-    
-    const phone1 = String(Math.floor(Math.random() * 9000) + 1000);
-    const phone2 = String(Math.floor(Math.random() * 9000) + 1000);
-    
-    return {
-      id: index + 1,
-      no: index + 1,
-      name: names[index % names.length] + (index >= names.length ? Math.floor(index / names.length) : ''),
-      birthDate: `${birthYear}.${birthMonth}.${birthDay}`,
-      phone: `010-${phone1}-${phone2}`,
-      address: addresses[Math.floor(Math.random() * addresses.length)],
-      consent: Math.random() > 0.2,
-      messageType: messageTypes[Math.floor(Math.random() * messageTypes.length)],
-      sendStatus: sendStatuses[Math.floor(Math.random() * sendStatuses.length)],
-      lastSentDate: lastSentDate 
-        ? `${lastSentDate.getFullYear()}.${String(lastSentDate.getMonth() + 1).padStart(2, '0')}.${String(lastSentDate.getDate()).padStart(2, '0')}`
-        : null,
-      registeredDate: `${registeredDate.getFullYear()}.${String(registeredDate.getMonth() + 1).padStart(2, '0')}.${String(registeredDate.getDate()).padStart(2, '0')}`,
-    };
-  });
-};
-
 function RecipientManagement() {
-  const [recipients, setRecipients] = useState(generateRecipients());
+  // 1. 초기값을 빈 배열로 변경 (더미 데이터 제거)
+  const [recipients, setRecipients] = useState([]);
+  const [loading, setLoading] = useState(true); // 로딩 상태 추가
+
   const [selectedIds, setSelectedIds] = useState([]);
-  const [periodFilter, setPeriodFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
+  const [periodFilter, setPeriodFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const itemsPerPage = 10;
 
-  // 필터링 및 검색 적용
+  // 2. 백엔드에서 데이터 가져오기 (GET /api/recipients)
+  const fetchRecipients = async () => {
+    try {
+      setLoading(true);
+      // vite.config.js의 proxy 덕분에 http://localhost:3001 생략 가능
+      const response = await axios.get("/api/recipients");
+
+      // 백엔드 응답 구조에 따라 데이터 세팅 (보통 response.data.data 또는 response.data)
+      // 여기서는 백엔드가 { success: true, data: [...] } 라고 준다고 가정
+      const rawData = response.data.data || response.data;
+
+      // 프론트엔드 테이블 형식에 맞게 데이터 가공
+      const formattedData = rawData.map((item, index) => ({
+        id: item.id,
+        no: index + 1, // 번호
+        name: item.name,
+        // DB 컬럼명에 따라 매칭 (phone_number -> phone)
+        phone: item.phone_number || item.phone,
+        address: item.address || "-",
+        birthDate: item.birth_date || "-", // DB 컬럼명이 birth_date라면
+        consent: true, // DB에 동의 여부가 없다면 기본 true
+        messageType: "일반 메시지", // DB에 유형이 없다면 기본값
+        sendStatus: "pending", // 발송 상태 (필요 시 조인해서 가져와야 함)
+        registeredDate: item.created_at
+          ? item.created_at.substring(0, 10).replace(/-/g, ".")
+          : "-",
+      }));
+
+      setRecipients(formattedData);
+    } catch (error) {
+      console.error("수신자 목록 불러오기 실패:", error);
+      setToast({
+        type: "error",
+        title: "데이터 로드 실패",
+        message: "수신자 목록을 불러오지 못했습니다.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 페이지가 처음 열릴 때 데이터 가져오기
+  useEffect(() => {
+    fetchRecipients();
+  }, []);
+
+  // ... (필터링 로직은 그대로 유지) ...
   const filteredRecipients = useMemo(() => {
     let filtered = [...recipients];
 
     // 기간 필터 적용
-    if (periodFilter !== 'all') {
+    if (periodFilter !== "all") {
       const today = new Date();
       const filterDate = new Date();
-      
+
       switch (periodFilter) {
-        case '1month':
+        case "1month":
           filterDate.setMonth(today.getMonth() - 1);
           break;
-        case '6months':
+        case "6months":
           filterDate.setMonth(today.getMonth() - 6);
           break;
-        case '1year':
+        case "1year":
           filterDate.setFullYear(today.getFullYear() - 1);
           break;
-        case 'custom':
+        case "custom":
           if (customStartDate && customEndDate) {
             const startDate = new Date(customStartDate);
             const endDate = new Date(customEndDate);
-            endDate.setHours(23, 59, 59, 999); // 종료일의 끝까지 포함
-            
-            filtered = filtered.filter(recipient => {
-              const registeredDate = new Date(recipient.registeredDate.replace(/\./g, '-'));
-              return registeredDate >= startDate && registeredDate <= endDate;
+            endDate.setHours(23, 59, 59, 999);
+            filtered = filtered.filter((recipient) => {
+              const rDate = new Date(
+                recipient.registeredDate.replace(/\./g, "-")
+              );
+              return rDate >= startDate && rDate <= endDate;
             });
           }
           break;
         default:
           break;
       }
-      
-      if (periodFilter !== 'custom') {
-        filtered = filtered.filter(recipient => {
-          const registeredDate = new Date(recipient.registeredDate.replace(/\./g, '-'));
-          return registeredDate >= filterDate;
+      if (periodFilter !== "custom") {
+        filtered = filtered.filter((recipient) => {
+          const rDate = new Date(recipient.registeredDate.replace(/\./g, "-"));
+          return rDate >= filterDate;
         });
       }
     }
@@ -118,12 +121,13 @@ function RecipientManagement() {
     // 검색 필터 적용
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(recipient => 
-        recipient.name.toLowerCase().includes(query) ||
-        recipient.phone.replace(/-/g, '').includes(query.replace(/-/g, ''))
+      filtered = filtered.filter(
+        (recipient) =>
+          recipient.name.toLowerCase().includes(query) ||
+          (recipient.phone &&
+            recipient.phone.replace(/-/g, "").includes(query.replace(/-/g, "")))
       );
     }
-
     return filtered;
   }, [recipients, periodFilter, searchQuery, customStartDate, customEndDate]);
 
@@ -131,141 +135,131 @@ function RecipientManagement() {
   const paginatedRecipients = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredRecipients.slice(startIndex, endIndex).map((recipient, index) => ({
-      ...recipient,
-      no: startIndex + index + 1,
-    }));
+    return filteredRecipients
+      .slice(startIndex, endIndex)
+      .map((recipient, index) => ({
+        ...recipient,
+        no: startIndex + index + 1, // 페이지별 번호 매기기
+      }));
   }, [filteredRecipients, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredRecipients.length / itemsPerPage);
 
-  // 통계 계산
+  // 통계 계산 (더미 로직 유지하되 실제 데이터 기반으로 작동)
   const stats = useMemo(() => {
-    const available = filteredRecipients.filter(r => r.consent && (r.sendStatus === 'success' || r.sendStatus === 'pending')).length;
-    const optOut = filteredRecipients.filter(r => !r.consent || r.sendStatus === 'failed').length;
+    const available = filteredRecipients.length; // 일단 전체 인원
+    const optOut = 0; // DB에 수신거부 컬럼이 생기면 수정 필요
     return { available, optOut };
   }, [filteredRecipients]);
 
-  // 전체 선택/해제
+  // ... (핸들러 함수들) ...
   const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedIds(paginatedRecipients.map(r => r.id));
-    } else {
-      setSelectedIds([]);
-    }
+    if (checked) setSelectedIds(paginatedRecipients.map((r) => r.id));
+    else setSelectedIds([]);
   };
 
-  // 개별 선택/해제
   const handleSelectOne = (id, checked) => {
-    if (checked) {
-      setSelectedIds([...selectedIds, id]);
-    } else {
-      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    if (checked) setSelectedIds([...selectedIds, id]);
+    else setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
+  };
+
+  // 3. 수신자 저장 핸들러 (POST /api/recipients) - 핵심 수정 부분!
+  const handleSaveRecipient = async (formData) => {
+    try {
+      // 백엔드로 보낼 데이터 준비
+      // 백엔드가 phone_number를 원한다면 키 이름을 맞춰줘야 함
+      const payload = {
+        name: formData.name,
+        phone_number: formData.phone, // 프론트(phone) -> 백엔드(phone_number)
+        address: formData.address,
+        // birth_date 등 다른 필드도 필요하면 추가
+      };
+
+      // API 요청
+      await axios.post("/api/recipients", payload);
+
+      // 성공 시 처리
+      setToast({
+        type: "success",
+        title: "수신자 추가 완료",
+        message: "수신자가 성공적으로 데이터베이스에 저장되었습니다.",
+      });
+
+      // 목록 새로고침 (DB에서 다시 가져오기)
+      fetchRecipients();
+
+      // 첫 페이지로 이동
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("수신자 추가 에러:", error);
+      setToast({
+        type: "error",
+        title: "추가 실패",
+        message:
+          error.response?.data?.error || "수신자 추가 중 오류가 발생했습니다.",
+      });
     }
   };
 
-  const isAllSelected = paginatedRecipients.length > 0 && 
-    paginatedRecipients.every(r => selectedIds.includes(r.id));
-  const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
-
-  // CSV 업로드 핸들러
-  const handleCSVUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        console.log('CSV 파일 업로드:', file.name);
-        // TODO: CSV 파일 처리 로직 구현
-      }
-    };
-    input.click();
-  };
-
-  // 수신자 추가 모달 열기
-  const handleAddRecipient = () => {
-    setIsAddModalOpen(true);
-  };
-
-  // 수신자 저장 핸들러
-  const handleSaveRecipient = (formData) => {
-    const today = new Date();
-    const newRecipient = {
-      id: recipients.length + 1,
-      no: recipients.length + 1,
-      name: formData.name,
-      birthDate: formData.birthDate ? formData.birthDate.replace(/-/g, '.') : '',
-      phone: formData.phone,
-      address: formData.address,
-      consent: formData.consent,
-      messageType: formData.messageTypes.length > 0 ? formData.messageTypes.join(', ') : '일반 메시지',
-      sendStatus: 'pending',
-      lastSentDate: null,
-      registeredDate: `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`,
-    };
-
-    setRecipients(prev => [newRecipient, ...prev]);
-    setToast({
-      type: 'success',
-      title: '수신자 추가 완료',
-      message: '수신자가 성공적으로 추가되었습니다.',
-    });
-
-    // 첫 페이지로 이동
-    setCurrentPage(1);
-  };
-
-  // 새로고침 핸들러
   const handleRefresh = () => {
     setSelectedIds([]);
     setCurrentPage(1);
-    // TODO: 실제 데이터 새로고침 로직 구현
-    console.log('데이터 새로고침');
+    fetchRecipients(); // 실제 데이터 새로고침
   };
 
-  // 전체 새로고침 (페이지 새로고침)
   const handleFullRefresh = () => {
     window.location.reload();
   };
 
-  // 커스텀 기간 설정 핸들러
+  const handleCSVUpload = () => {
+    // CSV 로직은 추후 구현
+    console.log("CSV Upload Clicked");
+  };
+
+  const handleAddRecipient = () => {
+    setIsAddModalOpen(true);
+  };
+
   const handleCustomPeriodConfirm = (startDate, endDate) => {
     setCustomStartDate(startDate);
     setCustomEndDate(endDate);
     setCurrentPage(1);
   };
 
-  // 페이지 변경 시 선택 해제
   React.useEffect(() => {
     setSelectedIds([]);
   }, [currentPage]);
 
-  // 기간 필터 변경 시 페이지 리셋
   React.useEffect(() => {
     setCurrentPage(1);
   }, [periodFilter, customStartDate, customEndDate]);
 
-  // 기존 전화번호 목록
-  const existingPhones = useMemo(() => {
-    return recipients.map(r => r.phone);
-  }, [recipients]);
+  const existingPhones = useMemo(
+    () => recipients.map((r) => r.phone),
+    [recipients]
+  );
+
+  // isAllSelected, isIndeterminate 계산
+  const isAllSelected =
+    paginatedRecipients.length > 0 &&
+    paginatedRecipients.every((r) => selectedIds.includes(r.id));
+  const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
   return (
     <PageContainer>
-      <RecipientHeader 
+      <RecipientHeader
         totalCount={filteredRecipients.length}
         selectedCount={selectedIds.length}
         availableCount={stats.available}
         optOutCount={stats.optOut}
       />
-      
+
       <RecipientFilterBar
         periodFilter={periodFilter}
         onPeriodChange={setPeriodFilter}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onFilterClick={() => console.log('필터 클릭')}
+        onFilterClick={() => console.log("필터 클릭")}
         onCSVUpload={handleCSVUpload}
         onAddRecipient={handleAddRecipient}
         onRefresh={handleRefresh}
@@ -274,7 +268,8 @@ function RecipientManagement() {
         customEndDate={customEndDate}
         onCustomPeriodConfirm={handleCustomPeriodConfirm}
       />
-      
+
+      {/* 로딩 중일 때 표시할 UI가 있으면 좋지만 일단 테이블 보여줌 */}
       <RecipientTable
         recipients={paginatedRecipients}
         selectedIds={selectedIds}
@@ -286,7 +281,7 @@ function RecipientManagement() {
         selectedCount={selectedIds.length}
         onRefresh={handleFullRefresh}
       />
-      
+
       {totalPages > 0 && (
         <Pagination
           currentPage={currentPage}
@@ -315,4 +310,3 @@ function RecipientManagement() {
 }
 
 export default RecipientManagement;
-
