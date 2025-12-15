@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import styled from 'styled-components';
-import MessageTabs from '../../components/message/MessageTabs';
-import MessageFilterBar from '../../components/message/MessageFilterBar';
-import MessageHistoryTable from '../../components/message/MessageHistoryTable';
-import MessageSendForm from '../../components/message/MessageSendForm';
-import Pagination from '../../components/common/Pagination';
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import styled from "styled-components";
+import axios from "axios";
+import MessageTabs from "../../components/message/MessageTabs";
+import MessageFilterBar from "../../components/message/MessageFilterBar";
+import MessageHistoryTable from "../../components/message/MessageHistoryTable";
+import MessageSendForm from "../../components/message/MessageSendForm";
+import Pagination from "../../components/common/Pagination";
 
 const PageContainer = styled.div`
   padding: 32px;
@@ -17,202 +18,221 @@ const TabContent = styled.div`
   padding-top: 0;
 `;
 
-// 더미 데이터 생성 함수
-const generateMessages = () => {
-  const messageTypes = ['일일 날씨', '긴급 알림', '복지 알림', '맞춤 알림'];
-  const statuses = ['대기중', '발송 완료', '발송 실패'];
-  const titles = [
-    '겨울철 독감 예방접종 안내',
-    '도룡동 정전 안내 및 복구 예정',
-    '유성구청 민원실 운영시간 변경 안내',
-    '저소득층 난방비 지원 신청 안내',
-    '호우경보 발효 및 하천 접근 자제',
-    '유성구청 주차장 임시 폐쇄 안내',
-    '복지정책 안내',
-    '긴급 재난 알림',
-  ];
+const TYPE_MAP = {
+  daily: "일일 날씨",
+  DAILY: "일일 날씨",
+  emergency: "긴급 알림",
+  EMERGENCY: "긴급 알림",
+  welfare: "복지 알림",
+  WELFARE: "복지 알림",
+  custom: "일반 메시지",
+  CUSTOM: "일반 메시지",
+  general: "일반 메시지",
+};
 
-  const today = new Date();
-  return Array.from({ length: 50 }, (_, index) => {
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 90));
-    
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + Math.floor(Math.random() * 30));
-
-    return {
-      id: index + 1,
-      no: index + 1,
-      messageType: messageTypes[Math.floor(Math.random() * messageTypes.length)],
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      title: titles[Math.floor(Math.random() * titles.length)],
-      startDate: `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')}`,
-      endDate: `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')}`,
-      registeredDate: new Date(startDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-    };
-  });
+const STATUS_MAP = {
+  pending: "대기중",
+  sending: "발송중",
+  sent: "발송 완료",
+  failed: "발송 실패",
+  cancelled: "취소됨",
 };
 
 function MessageManagement() {
-  const [activeTab, setActiveTab] = useState('history');
-  const [messages] = useState(generateMessages());
+  const [activeTab, setActiveTab] = useState("history");
+  const [messages, setMessages] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [messageType, setMessageType] = useState('all');
-  const [periodFilter, setPeriodFilter] = useState('all');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [messageType, setMessageType] = useState("all");
+  const [periodFilter, setPeriodFilter] = useState("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [loading, setLoading] = useState(false);
 
-  // value를 label로 변환하는 매핑
-  const messageTypeValueToLabel = {
-    'DAILY_WEATHER': '일일 날씨',
-    'EMERGENCY': '긴급 알림',
-    'WELFARE': '복지 알림',
-    'CUSTOM': '맞춤 알림',
-  };
+  const fetchMessages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("/api/messages", {
+        params: { limit: 100 },
+      });
 
-  // 필터링 및 검색 적용
+      if (response.data.success) {
+        const formattedData = response.data.data.map((msg, index) => {
+          const count = msg.recipient_count || 0;
+          const recipientDisplay =
+            count > 1 ? `전체 (${count}명)` : `개별 (${count}명)`;
+
+          return {
+            id: msg.id,
+            // 매핑 실패 시 원본 타입 그대로 표시
+            messageType: TYPE_MAP[msg.type] || msg.type,
+            status: STATUS_MAP[msg.status] || msg.status,
+            title: msg.title,
+            sendMethod: msg.scheduled_at ? "예약 발송" : "즉시 발송",
+            recipientCount: recipientDisplay,
+            startDate: msg.created_at
+              ? new Date(msg.created_at).toLocaleDateString("ko-KR")
+              : "-",
+            endDate: msg.sent_at
+              ? new Date(msg.sent_at).toLocaleDateString("ko-KR")
+              : msg.scheduled_at
+              ? new Date(msg.scheduled_at).toLocaleDateString("ko-KR")
+              : "-",
+            registeredDate: msg.created_at,
+          };
+        });
+        setMessages(formattedData);
+      }
+    } catch (error) {
+      console.error("메시지 목록 로드 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchMessages();
+    }
+  }, [activeTab, fetchMessages]);
+
   const filteredMessages = useMemo(() => {
     let filtered = [...messages];
 
-    // 메시지 타입 필터
-    if (messageType !== 'all') {
-      const label = messageTypeValueToLabel[messageType];
-      if (label) {
-        filtered = filtered.filter(msg => msg.messageType === label);
-      }
+    if (messageType !== "all") {
+      const targetLabel = TYPE_MAP[messageType] || messageType;
+      const dropdownMap = {
+        DAILY_WEATHER: "일일 날씨",
+        EMERGENCY: "긴급 알림",
+        WELFARE: "복지 알림",
+        CUSTOM: "일반 메시지",
+      };
+      const searchLabel = dropdownMap[messageType] || targetLabel;
+
+      filtered = filtered.filter((msg) => msg.messageType === searchLabel);
     }
 
-    // 검색 필터
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(msg =>
+      filtered = filtered.filter((msg) =>
         msg.title.toLowerCase().includes(query)
       );
     }
 
-    // 등록일 필터
-    if (periodFilter !== 'all') {
+    if (periodFilter !== "all") {
       const today = new Date();
       const filterDate = new Date();
-      
       switch (periodFilter) {
-        case '1month':
+        case "1month":
           filterDate.setMonth(today.getMonth() - 1);
           break;
-        case '6months':
+        case "6months":
           filterDate.setMonth(today.getMonth() - 6);
           break;
-        case '1year':
+        case "1year":
           filterDate.setFullYear(today.getFullYear() - 1);
           break;
-        case 'custom':
+        case "custom":
           if (customStartDate && customEndDate) {
             const startDate = new Date(customStartDate);
             const endDate = new Date(customEndDate);
             endDate.setHours(23, 59, 59, 999);
-            
-            filtered = filtered.filter(msg => {
-              const registeredDate = new Date(msg.registeredDate);
-              return registeredDate >= startDate && registeredDate <= endDate;
+            filtered = filtered.filter((msg) => {
+              const regDate = new Date(msg.registeredDate);
+              return regDate >= startDate && regDate <= endDate;
             });
           }
           break;
         default:
           break;
       }
-      
-      if (periodFilter !== 'custom') {
-        filtered = filtered.filter(msg => {
-          const registeredDate = new Date(msg.registeredDate);
-          return registeredDate >= filterDate;
-        });
+      if (periodFilter !== "custom") {
+        filtered = filtered.filter(
+          (msg) => new Date(msg.registeredDate) >= filterDate
+        );
       }
     }
-
     return filtered;
-  }, [messages, messageType, searchQuery, periodFilter, customStartDate, customEndDate]);
+  }, [
+    messages,
+    messageType,
+    searchQuery,
+    periodFilter,
+    customStartDate,
+    customEndDate,
+  ]);
 
-  // 페이지네이션 적용
   const paginatedMessages = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredMessages.slice(startIndex, endIndex).map((message, index) => ({
-      ...message,
-      no: startIndex + index + 1,
-    }));
+    // ★★★ [수정됨] .reverse() 삭제! 백엔드가 준 순서(최신순) 그대로 사용 ★★★
+    return filteredMessages
+      .slice(startIndex, endIndex)
+      .map((message, index) => ({
+        ...message,
+        // 번호 계산 로직 (전체 개수 - (현재페이지앞개수 + 인덱스))
+        no: filteredMessages.length - (startIndex + index),
+      }));
   }, [filteredMessages, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredMessages.length / itemsPerPage);
 
-  // 전체 선택/해제
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedIds(paginatedMessages.map(m => m.id));
+      setSelectedIds(paginatedMessages.map((m) => m.id));
     } else {
       setSelectedIds([]);
     }
   };
 
-  // 개별 선택/해제
   const handleSelectOne = (id, checked) => {
     if (checked) {
       setSelectedIds([...selectedIds, id]);
     } else {
-      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+      setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
     }
   };
 
-  const isAllSelected = paginatedMessages.length > 0 &&
-    paginatedMessages.every(m => selectedIds.includes(m.id));
+  const isAllSelected =
+    paginatedMessages.length > 0 &&
+    paginatedMessages.every((m) => selectedIds.includes(m.id));
   const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
-  // 검색 핸들러
-  const handleSearch = () => {
-    setCurrentPage(1);
-    // 검색은 이미 filteredMessages에서 처리됨
-  };
+  const handleSearch = () => setCurrentPage(1);
 
-  // 필터 초기화
   const handleReset = () => {
-    setSearchQuery('');
-    setMessageType('all');
-    setPeriodFilter('all');
-    setCustomStartDate('');
-    setCustomEndDate('');
+    setSearchQuery("");
+    setMessageType("all");
+    setPeriodFilter("all");
+    setCustomStartDate("");
+    setCustomEndDate("");
     setSelectedIds([]);
     setCurrentPage(1);
+    fetchMessages();
   };
 
-  // 커스텀 기간 설정
   const handleCustomPeriodConfirm = (startDate, endDate) => {
     setCustomStartDate(startDate);
     setCustomEndDate(endDate);
     setCurrentPage(1);
   };
 
-  // 새로고침
   const handleRefresh = () => {
     setSelectedIds([]);
-    setCurrentPage(1);
-    // TODO: 실제 데이터 새로고침 로직 구현
-    console.log('데이터 새로고침');
+    fetchMessages();
   };
 
-  // 전체 새로고침 (페이지 새로고침)
   const handleFullRefresh = () => {
     window.location.reload();
   };
 
-  // 페이지 변경 시 선택 해제 및 스크롤 최상단
   useEffect(() => {
     setSelectedIds([]);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
 
-  // 필터 변경 시 페이지 리셋
   useEffect(() => {
     setCurrentPage(1);
   }, [periodFilter, customStartDate, customEndDate, messageType, searchQuery]);
@@ -220,8 +240,8 @@ function MessageManagement() {
   return (
     <PageContainer>
       <MessageTabs activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      {activeTab === 'history' && (
+
+      {activeTab === "history" && (
         <TabContent>
           <MessageFilterBar
             searchQuery={searchQuery}
@@ -237,7 +257,7 @@ function MessageManagement() {
             customEndDate={customEndDate}
             onCustomPeriodConfirm={handleCustomPeriodConfirm}
           />
-          
+
           <MessageHistoryTable
             messages={paginatedMessages}
             selectedIds={selectedIds}
@@ -247,9 +267,9 @@ function MessageManagement() {
             isIndeterminate={isIndeterminate}
             totalCount={filteredMessages.length}
             selectedCount={selectedIds.length}
-            onRefresh={handleFullRefresh}
+            onRefresh={handleRefresh}
           />
-          
+
           {totalPages > 0 && (
             <Pagination
               currentPage={currentPage}
@@ -259,8 +279,8 @@ function MessageManagement() {
           )}
         </TabContent>
       )}
-      
-      {activeTab === 'send' && (
+
+      {activeTab === "send" && (
         <TabContent>
           <MessageSendForm />
         </TabContent>
@@ -270,4 +290,3 @@ function MessageManagement() {
 }
 
 export default MessageManagement;
-

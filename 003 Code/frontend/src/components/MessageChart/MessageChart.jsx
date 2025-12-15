@@ -1,112 +1,111 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import styled from 'styled-components';
+import React from "react";
+import styled from "styled-components";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const ChartContainer = styled.div`
   background-color: #ffffff;
   border-radius: 12px;
-  padding: 16px;
   border: 1px solid #e5e7eb;
+  padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 `;
 
-const ChartTitle = styled.h3`
+// ★★★ [수정] 누락되었던 ChartHeader 정의 추가 ★★★
+const ChartHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+`;
+
+const Title = styled.h3`
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
-  margin: 0 0 16px 0;
 `;
 
-// 최근 7일 더미 데이터
-const generateChartData = () => {
-  const days = ['월', '화', '수', '목', '금', '토', '일'];
-  const today = new Date();
-  
-  return days.map((day, index) => {
-    const date = new Date(today);
-    date.setDate(date.getDate() - (6 - index));
-    return {
-      name: day,
-      발송: Math.floor(Math.random() * 500) + 200,
-      성공: Math.floor(Math.random() * 450) + 180,
-      실패: Math.floor(Math.random() * 50) + 10,
-    };
-  });
-};
-
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        padding: '12px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-      }}>
-        {payload.map((entry, index) => (
-          <p key={index} style={{ 
-            margin: '4px 0',
-            color: entry.color,
-            fontSize: '14px',
-            fontWeight: 500
-          }}>
-            {entry.name}: {entry.value.toLocaleString()}건
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-function MessageChart() {
-  const data = generateChartData();
+function MessageChart({ data }) {
+  // 데이터가 아직 로드되지 않았을 때의 처리
+  const chartData =
+    data && data.length > 0
+      ? data
+      : [{ name: "Loading...", 전체: 0, 성공: 0, 실패: 0 }];
 
   return (
     <ChartContainer>
-      <ChartTitle>문자 발송 추이</ChartTitle>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis 
-            dataKey="name" 
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
-          />
-          <YAxis 
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line 
-            type="monotone" 
-            dataKey="발송" 
-            stroke="#2563eb" 
-            strokeWidth={2}
-            dot={{ fill: '#2563eb', r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="성공" 
-            stroke="#10b981" 
-            strokeWidth={2}
-            dot={{ fill: '#10b981', r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="실패" 
-            stroke="#ef4444" 
-            strokeWidth={2}
-            dot={{ fill: '#ef4444', r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <ChartHeader>
+        <Title>문자 발송 추이 (최근 7일)</Title>
+      </ChartHeader>
+
+      <div style={{ width: "100%", height: 300 }}>
+        <ResponsiveContainer>
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#e5e7eb"
+            />
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#6b7280", fontSize: 12 }}
+              dy={10}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#6b7280", fontSize: 12 }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#fff",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              }}
+            />
+            <Legend wrapperStyle={{ paddingTop: "20px" }} />
+
+            <Line
+              type="monotone"
+              dataKey="전체"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
+              activeDot={{ r: 6 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="성공"
+              stroke="#10b981"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="실패"
+              stroke="#ef4444"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#ef4444", strokeWidth: 0 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </ChartContainer>
   );
 }
 
 export default MessageChart;
-
