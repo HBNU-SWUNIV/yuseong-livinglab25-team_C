@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react"; // useEffect 추가
+import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
-import axios from "axios"; // axios 추가
+import axios from "axios";
 import RecipientHeader from "../../components/recipient/RecipientHeader";
 import RecipientFilterBar from "../../components/recipient/RecipientFilterBar";
 import RecipientTable from "../../components/recipient/RecipientTable";
@@ -15,9 +15,8 @@ const PageContainer = styled.div`
 `;
 
 function RecipientManagement() {
-  // 1. 초기값을 빈 배열로 변경 (더미 데이터 제거)
   const [recipients, setRecipients] = useState([]);
-  const [loading, setLoading] = useState(true); // 로딩 상태 추가
+  const [loading, setLoading] = useState(true);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [periodFilter, setPeriodFilter] = useState("all");
@@ -29,29 +28,26 @@ function RecipientManagement() {
   const [toast, setToast] = useState(null);
   const itemsPerPage = 10;
 
-  // 2. 백엔드에서 데이터 가져오기 (GET /api/recipients)
+  // 백엔드에서 데이터 가져오기
   const fetchRecipients = async () => {
     try {
       setLoading(true);
-      // vite.config.js의 proxy 덕분에 http://localhost:3001 생략 가능
       const response = await axios.get("/api/recipients");
-
-      // 백엔드 응답 구조에 따라 데이터 세팅 (보통 response.data.data 또는 response.data)
-      // 여기서는 백엔드가 { success: true, data: [...] } 라고 준다고 가정
       const rawData = response.data.data || response.data;
 
       // 프론트엔드 테이블 형식에 맞게 데이터 가공
       const formattedData = rawData.map((item, index) => ({
         id: item.id,
-        no: index + 1, // 번호
+        no: index + 1,
         name: item.name,
-        // DB 컬럼명에 따라 매칭 (phone_number -> phone)
-        phone: item.phone_number || item.phone,
+        phone: item.phone_number || item.phone, // DB: phone_number -> UI: phone
         address: item.address || "-",
-        birthDate: item.birth_date || "-", // DB 컬럼명이 birth_date라면
-        consent: true, // DB에 동의 여부가 없다면 기본 true
-        messageType: "일반 메시지", // DB에 유형이 없다면 기본값
-        sendStatus: "pending", // 발송 상태 (필요 시 조인해서 가져와야 함)
+        birthDate: item.birth_date
+          ? String(item.birth_date).substring(0, 10) // "2025-12-15" 까지만 나옴
+          : "-", // DB: birth_date -> UI: birthDate
+        consent: true,
+        messageType: "일반 메시지",
+        sendStatus: "pending",
         registeredDate: item.created_at
           ? item.created_at.substring(0, 10).replace(/-/g, ".")
           : "-",
@@ -70,16 +66,14 @@ function RecipientManagement() {
     }
   };
 
-  // 페이지가 처음 열릴 때 데이터 가져오기
   useEffect(() => {
     fetchRecipients();
   }, []);
 
-  // ... (필터링 로직은 그대로 유지) ...
+  // 필터링 로직
   const filteredRecipients = useMemo(() => {
     let filtered = [...recipients];
 
-    // 기간 필터 적용
     if (periodFilter !== "all") {
       const today = new Date();
       const filterDate = new Date();
@@ -118,7 +112,6 @@ function RecipientManagement() {
       }
     }
 
-    // 검색 필터 적용
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
@@ -131,7 +124,7 @@ function RecipientManagement() {
     return filtered;
   }, [recipients, periodFilter, searchQuery, customStartDate, customEndDate]);
 
-  // 페이지네이션 적용
+  // 페이지네이션
   const paginatedRecipients = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -139,20 +132,18 @@ function RecipientManagement() {
       .slice(startIndex, endIndex)
       .map((recipient, index) => ({
         ...recipient,
-        no: startIndex + index + 1, // 페이지별 번호 매기기
+        no: startIndex + index + 1,
       }));
   }, [filteredRecipients, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredRecipients.length / itemsPerPage);
 
-  // 통계 계산 (더미 로직 유지하되 실제 데이터 기반으로 작동)
   const stats = useMemo(() => {
-    const available = filteredRecipients.length; // 일단 전체 인원
-    const optOut = 0; // DB에 수신거부 컬럼이 생기면 수정 필요
+    const available = filteredRecipients.length;
+    const optOut = 0;
     return { available, optOut };
   }, [filteredRecipients]);
 
-  // ... (핸들러 함수들) ...
   const handleSelectAll = (checked) => {
     if (checked) setSelectedIds(paginatedRecipients.map((r) => r.id));
     else setSelectedIds([]);
@@ -163,40 +154,32 @@ function RecipientManagement() {
     else setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
   };
 
-  // 3. 수신자 저장 핸들러 (POST /api/recipients) - 핵심 수정 부분!
-  const handleSaveRecipient = async (formData) => {
+  // ★★★ [수정된 핵심 부분] 수신자 저장 핸들러 ★★★
+  const handleSaveRecipient = async (recipientData) => {
     try {
-      // 백엔드로 보낼 데이터 준비
-      // 백엔드가 phone_number를 원한다면 키 이름을 맞춰줘야 함
-      const payload = {
-        name: formData.name,
-        phone_number: formData.phone, // 프론트(phone) -> 백엔드(phone_number)
-        address: formData.address,
-        // birth_date 등 다른 필드도 필요하면 추가
-      };
+      // 모달(AddRecipientModal)에서 이미 { name, phone_number, birth_date, ... }
+      // 형태로 완벽하게 만들어서 넘겨주므로, 그대로 전송하면 됩니다.
+      console.log("🔥 [전송 데이터 확인]", recipientData);
 
-      // API 요청
-      await axios.post("/api/recipients", payload);
+      await axios.post("/api/recipients", recipientData);
 
-      // 성공 시 처리
       setToast({
         type: "success",
         title: "수신자 추가 완료",
         message: "수신자가 성공적으로 데이터베이스에 저장되었습니다.",
       });
 
-      // 목록 새로고침 (DB에서 다시 가져오기)
       fetchRecipients();
-
-      // 첫 페이지로 이동
       setCurrentPage(1);
     } catch (error) {
       console.error("수신자 추가 에러:", error);
+      const errorMsg =
+        error.response?.data?.message || "수신자 추가 중 오류가 발생했습니다.";
+
       setToast({
         type: "error",
         title: "추가 실패",
-        message:
-          error.response?.data?.error || "수신자 추가 중 오류가 발생했습니다.",
+        message: errorMsg,
       });
     }
   };
@@ -204,7 +187,7 @@ function RecipientManagement() {
   const handleRefresh = () => {
     setSelectedIds([]);
     setCurrentPage(1);
-    fetchRecipients(); // 실제 데이터 새로고침
+    fetchRecipients();
   };
 
   const handleFullRefresh = () => {
@@ -212,7 +195,6 @@ function RecipientManagement() {
   };
 
   const handleCSVUpload = () => {
-    // CSV 로직은 추후 구현
     console.log("CSV Upload Clicked");
   };
 
@@ -239,7 +221,6 @@ function RecipientManagement() {
     [recipients]
   );
 
-  // isAllSelected, isIndeterminate 계산
   const isAllSelected =
     paginatedRecipients.length > 0 &&
     paginatedRecipients.every((r) => selectedIds.includes(r.id));
@@ -269,7 +250,6 @@ function RecipientManagement() {
         onCustomPeriodConfirm={handleCustomPeriodConfirm}
       />
 
-      {/* 로딩 중일 때 표시할 UI가 있으면 좋지만 일단 테이블 보여줌 */}
       <RecipientTable
         recipients={paginatedRecipients}
         selectedIds={selectedIds}

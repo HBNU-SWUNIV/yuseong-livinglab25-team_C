@@ -150,7 +150,6 @@ const ButtonGroup = styled.div`
   border-top: 1px solid #e5e7eb;
 `;
 
-// [수정 포인트 1] props.primary -> props.$primary 로 변경
 const Button = styled.button`
   padding: 10px 20px;
   border-radius: 8px;
@@ -280,9 +279,19 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
     return Object.keys(newErrors).length === 0;
   };
 
+  // ★★★ [수정] 백엔드 포맷에 맞춰 데이터 전송 ★★★
   const handleSave = () => {
     if (validateForm()) {
-      onSave(formData);
+      const dataToSave = {
+        name: formData.name,
+        phone_number: formData.phone, // phone -> phone_number
+        address: formData.address,
+        birth_date: formData.birthDate, // birthDate -> birth_date
+        // consent 및 messageTypes는 백엔드 테이블에 컬럼이 없다면 무시될 수 있음
+        // 만약 필요하다면 컨트롤러에서 받아서 처리하도록 해야 함
+      };
+
+      onSave(dataToSave);
       handleReset();
       onClose();
     }
@@ -423,7 +432,6 @@ function AddRecipientModal({ isOpen, onClose, onSave, existingPhones = [] }) {
 
         <ButtonGroup>
           <Button onClick={handleCancel}>취소</Button>
-          {/* [수정 포인트 2] primary -> $primary 로 변경 */}
           <Button $primary onClick={handleSave} disabled={isSaveDisabled}>
             저장
           </Button>
